@@ -1,0 +1,60 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  DJANGO_SECRET_KEY: ci-test-secret-key-not-for-production
+  DJANGO_DEBUG: "True"
+
+jobs:
+  build-and-test:
+    name: Checkout, install, test, build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: "pip"
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Build Tailwind CSS
+        run: npm run build
+
+      - name: Django system check
+        run: python manage.py check
+
+      - name: Run tests
+        run: python manage.py test
+
+      - name: Build application (Docker image)
+        run: docker build -t shophub:${{ github.sha }} .
+
+  deploy:
+    name: Deploy
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - name: No deployment target configured yet
+        run: |
+          echo "build-and-test passed on main, but no hosting target is wired up yet."
+          echo "Once you pick one (GHCR + a server, Render, Fly.io, etc.), replace this step."
