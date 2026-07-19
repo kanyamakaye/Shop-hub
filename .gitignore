@@ -15,6 +15,9 @@ staticfiles/
 node_modules/
 npm-debug.log*
 
+# Docker / secrets
+.env
+
 # Editor / OS
 .vscode/
 .idea/
