@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{% if tenant %}Edit organization{% else %}New organization{% endif %}{% endblock %}
+{% block content %}
+{% if tenant %}
+<div class="mx-auto max-w-2xl">
+    {% if not is_modal %}
+    <div class="mb-6 flex items-center gap-3">
+        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-blue-100 text-xl dark:bg-brand-blue-900/40">🏢</span>
+        <h1 class="text-2xl font-bold text-slate-900 dark:text-white">Edit organization</h1>
+    </div>
+    {% endif %}
+{% else %}
+{% include "_form_header.html" with icon="🏢" title="New Organization" subtitle="Set up a new store on ShopHub, along with the admin login it'll use to sign in." %}
+<div class="mx-auto max-w-2xl space-y-6">
+{% endif %}
+    <div class="card">
+        {% include "_form_section.html" with icon="🏢" title="Organization details" %}
+        <form method="post" enctype="multipart/form-data" novalidate class="space-y-4">
+            {% csrf_token %}
+            <div class="grid gap-4 sm:grid-cols-2">
+                <div>
+                    <label class="form-label" for="{{ form.business_name.id_for_label }}">Business name <span class="form-required">*</span></label>
+                    {{ form.business_name }}
+                    {% if form.business_name.errors %}<p class="mt-1 text-xs text-red-600">{{ form.business_name.errors|join:', ' }}</p>{% endif %}
+                </div>
+                <div>
+                    <label class="form-label" for="{{ form.plan.id_for_label }}">Plan <span class="form-required">*</span></label>
+                    {{ form.plan }}
+                </div>
+            </div>
+            <div class="grid gap-4 sm:grid-cols-2">
+                <div>
+                    <label class="form-label" for="{{ form.email.id_for_label }}">Email <span class="form-required">*</span></label>
+                    {{ form.email }}
+                    {% if form.email.errors %}<p class="mt-1 text-xs text-red-600">{{ form.email.errors|join:', ' }}</p>{% endif %}
+                </div>
+                <div>
+                    <label class="form-label" for="{{ form.phone.id_for_label }}">Phone <span class="form-required">*</span></label>
+                    {{ form.phone }}
+                </div>
+            </div>
+            <div class="grid gap-4 sm:grid-cols-2">
+                <div>
+                    <label class="form-label" for="{{ form.whatsapp_number.id_for_label }}">WhatsApp number <span class="text-slate-400">(optional)</span></label>
+                    {{ form.whatsapp_number }}
+                </div>
+                <div>
+                    <label class="form-label" for="{{ form.country.id_for_label }}">Country <span class="form-required">*</span></label>
+                    {{ form.country }}
+                </div>
+            </div>
+            <div class="grid gap-4 sm:grid-cols-2">
+                <div>
+                    <label class="form-label" for="{{ form.address.id_for_label }}">Address <span class="form-required">*</span></label>
+                    {{ form.address }}
+                </div>
+                <div>
+                    <label class="form-label" for="{{ form.status.id_for_label }}">Status</label>
+                    {{ form.status }}
+                </div>
+            </div>
+            <div>
+                <label class="form-label" for="{{ form.logo.id_for_label }}">Logo <span class="text-slate-400">(optional)</span></label>
+                {% if tenant.logo %}<img src="{{ tenant.logo.url }}" class="mb-2 h-16 w-16 rounded-lg object-cover" alt="">{% endif %}
+                {{ form.logo }}
+                <p class="mt-1 text-xs text-slate-400">PNG or JPG, up to 5MB.</p>
+            </div>
+
+            <div class="pt-2">
+                {% include "_form_section.html" with icon="🧾" title="Tax & shipping" %}
+            </div>
+            <div class="grid gap-4 sm:grid-cols-2">
+                <div>
+                    <label class="form-label" for="{{ form.tax_rate.id_for_label }}">Tax rate <span class="text-slate-400">(%, optional)</span></label>
+                    {{ form.tax_rate }}
+                </div>
+                <div>
+                    <label class="form-label" for="{{ form.shipping_fee.id_for_label }}">Shipping fee <span class="text-slate-400">(RWF, optional)</span></label>
+                    {{ form.shipping_fee }}
+                </div>
+            </div>
+
+            {% if admin_form %}
+            <div class="pt-2">
+                {% include "_form_section.html" with icon="🔑" title="Admin login for this organization" %}
+            </div>
+            <div class="grid gap-4 sm:grid-cols-2">
+                <div>
+                    <label class="form-label" for="{{ admin_form.username.id_for_label }}">Username <span class="form-required">*</span></label>
+                    {{ admin_form.username }}
+                    {% if admin_form.username.errors %}<p class="mt-1 text-xs text-red-600">{{ admin_form.username.errors|join:', ' }}</p>{% endif %}
+                </div>
+                <div>
+                    <label class="form-label" for="{{ admin_form.email.id_for_label }}">Email <span class="text-slate-400">(optional)</span></label>
+                    {{ admin_form.email }}
+                </div>
+            </div>
+            <div class="grid gap-4 sm:grid-cols-2">
+                <div>
+                    <label class="form-label" for="{{ admin_form.first_name.id_for_label }}">First name <span class="text-slate-400">(optional)</span></label>
+                    {{ admin_form.first_name }}
+                </div>
+                <div>
+                    <label class="form-label" for="{{ admin_form.last_name.id_for_label }}">Last name <span class="text-slate-400">(optional)</span></label>
+                    {{ admin_form.last_name }}
+                </div>
+            </div>
+            <div class="grid gap-4 sm:grid-cols-2">
+                <div>
+                    <label class="form-label" for="{{ admin_form.phone.id_for_label }}">Phone <span class="text-slate-400">(optional)</span></label>
+                    {{ admin_form.phone }}
+                </div>
+                <div>
+                    <label class="form-label" for="{{ admin_form.password.id_for_label }}">Password <span class="form-required">*</span></label>
+                    {{ admin_form.password }}
+                    {% if admin_form.password.errors %}<p class="mt-1 text-xs text-red-600">{{ admin_form.password.errors|join:', ' }}</p>{% endif %}
+                </div>
+            </div>
+            <div>
+                <p class="form-label mb-2">Admin's location details <span class="form-required">*</span></p>
+                <div class="grid gap-4 sm:grid-cols-2">
+                    {% for field in admin_form %}
+                        {% if field.name in "province,district,sector,cell,village,postal_address" %}
+                        <div>
+                            <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.errors %}<p class="mt-1 text-xs text-red-600">{{ field.errors|join:', ' }}</p>{% endif %}
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="form-actions">
+                <a href="{% url 'tenants:list' %}" class="btn-outline">Cancel</a>
+                <button type="submit" class="btn-primary">{% if tenant %}Save changes{% else %}Create organization &amp; admin login{% endif %}</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script src="{% static 'js/location-cascade.js' %}"></script>
+{% endblock %}

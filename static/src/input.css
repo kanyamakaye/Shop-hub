@@ -1,0 +1,175 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    font-family: 'Arial', 'Helvetica', sans-serif;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center rounded-lg bg-brand-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-blue-700 focus:outline-none focus:ring-2 focus:ring-brand-blue-500 focus:ring-offset-2;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center justify-center rounded-lg bg-brand-green-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-green-700 focus:outline-none focus:ring-2 focus:ring-brand-green-500 focus:ring-offset-2;
+  }
+  .btn-outline {
+    @apply inline-flex items-center justify-center rounded-lg border border-brand-blue-600 px-4 py-2 text-sm font-semibold text-brand-blue-600 transition hover:bg-brand-blue-50 dark:border-brand-blue-400 dark:text-brand-blue-300 dark:hover:bg-slate-800;
+  }
+  .card {
+    @apply rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition duration-300 dark:border-slate-700 dark:bg-slate-800;
+  }
+  .badge {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
+  .badge-blue {
+    @apply badge bg-brand-blue-100 text-brand-blue-800 dark:bg-brand-blue-900/40 dark:text-brand-blue-300;
+  }
+  .badge-green {
+    @apply badge bg-brand-green-100 text-brand-green-800 dark:bg-brand-green-900/40 dark:text-brand-green-300;
+  }
+  .form-input {
+    @apply block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-brand-blue-500 focus:outline-none focus:ring-1 focus:ring-brand-blue-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100;
+  }
+  .form-label {
+    @apply mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300;
+  }
+  .form-required {
+    @apply text-red-500;
+  }
+  .form-actions {
+    @apply mt-2 flex items-center justify-between gap-3 border-t border-slate-100 pt-4 dark:border-slate-700;
+  }
+  .file-input {
+    @apply block w-full text-sm text-slate-500 file:mr-4 file:rounded-lg file:border-0 file:bg-brand-blue-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-brand-blue-700 hover:file:bg-brand-blue-100 dark:text-slate-400 dark:file:bg-brand-blue-900/40 dark:file:text-brand-blue-300;
+  }
+  .sidebar-link {
+    @apply block rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-brand-blue-50 hover:text-brand-blue-700 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-brand-blue-300;
+  }
+  .table-base {
+    @apply min-w-full divide-y divide-slate-200 text-sm dark:divide-slate-700;
+  }
+  .table-base th {
+    @apply px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400;
+  }
+  .table-base td {
+    @apply px-4 py-3 text-slate-700 dark:text-slate-200;
+  }
+  .category-pill {
+    @apply rounded-full border border-slate-200 px-4 py-1.5 text-sm font-medium text-slate-600 transition hover:border-brand-blue-300 dark:border-slate-600 dark:text-slate-300;
+  }
+  .category-pill-active {
+    @apply border-brand-blue-600 bg-brand-blue-600 text-white hover:border-brand-blue-600 dark:border-brand-blue-500 dark:bg-brand-blue-600;
+  }
+  .modal-overlay {
+    @apply fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 opacity-0 transition-opacity duration-150;
+  }
+  .modal-overlay.modal-open {
+    @apply opacity-100;
+  }
+  .modal-panel {
+    @apply max-h-[90vh] w-full max-w-4xl scale-95 overflow-y-auto rounded-xl bg-white shadow-xl transition-transform duration-150 dark:bg-slate-800;
+  }
+  .modal-overlay.modal-open .modal-panel {
+    @apply scale-100;
+  }
+  .icon-btn {
+    @apply inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-brand-blue-600 dark:hover:bg-slate-700 dark:hover:text-brand-blue-300;
+  }
+  .icon-btn-danger {
+    @apply hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950 dark:hover:text-red-400;
+  }
+  .table-row-hover {
+    @apply transition hover:bg-slate-50 dark:hover:bg-slate-700/40;
+  }
+}
+
+@layer utilities {
+  /* Content is visible by default (no JS required). The reveal-on-scroll
+     effect is opt-in: only applies once .js-reveal-ready is set on <html>
+     (see base.html), so a JS failure never hides page content. */
+  .js-reveal-ready .reveal {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+  }
+  .js-reveal-ready .reveal.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Hero: slow ambient gradient wash behind the blurred blobs. */
+  .hero-gradient-bg {
+    background: linear-gradient(120deg, #0d1b47, #152f74, #421900, #0d1b47);
+    background-size: 300% 300%;
+    animation: hero-gradient-shift 16s ease infinite;
+  }
+  @keyframes hero-gradient-shift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  /* Gentle floating motion for decorative blobs and the dashboard mockup. */
+  .float-slow {
+    animation: float-y 6s ease-in-out infinite;
+  }
+  .float-slow-delayed {
+    animation: float-y 6s ease-in-out infinite;
+    animation-delay: -3s;
+  }
+  @keyframes float-y {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-14px); }
+  }
+
+  /* Staggered fade-up for hero content once revealed. */
+  .js-reveal-ready .hero-stagger > * {
+    opacity: 0;
+    transform: translateY(16px);
+    transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+  }
+  .js-reveal-ready .reveal.is-visible .hero-stagger > * {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .hero-stagger > *:nth-child(1) { transition-delay: 0ms; }
+  .hero-stagger > *:nth-child(2) { transition-delay: 90ms; }
+  .hero-stagger > *:nth-child(3) { transition-delay: 180ms; }
+  .hero-stagger > *:nth-child(4) { transition-delay: 270ms; }
+  .hero-stagger > *:nth-child(5) { transition-delay: 360ms; }
+
+  /* Dashboard mockup notification chip slide-in loop. */
+  .notification-chip {
+    animation: notification-pop 5s ease-in-out infinite;
+  }
+  @keyframes notification-pop {
+    0%, 14% { opacity: 0; transform: translateY(8px) scale(0.96); }
+    20%, 80% { opacity: 1; transform: translateY(0) scale(1); }
+    92%, 100% { opacity: 0; transform: translateY(8px) scale(0.96); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero-gradient-bg, .float-slow, .float-slow-delayed, .notification-chip {
+      animation: none !important;
+    }
+  }
+
+  /* Toast messages: slide/fade in immediately, then auto-dismissed by JS (app.js). */
+  .toast-enter {
+    animation: toast-in 0.2s ease-out;
+  }
+  .toast-exit {
+    animation: toast-out 0.2s ease-in forwards;
+  }
+  @keyframes toast-in {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes toast-out {
+    from { opacity: 1; transform: translateY(0); }
+    to { opacity: 0; transform: translateY(-10px); }
+  }
+}

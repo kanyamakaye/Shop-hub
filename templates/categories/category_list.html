@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Categories{% endblock %}
+{% block content %}
+<div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+    <h1 class="text-2xl font-bold text-slate-900 dark:text-white">Categories</h1>
+    <a href="{% url 'categories:create' %}" class="btn-primary">+ New category</a>
+</div>
+
+<form method="get" class="mb-4 max-w-sm">
+    <input type="text" name="q" value="{{ query }}" placeholder="Search categories..." class="form-input">
+</form>
+
+<div class="card overflow-x-auto p-0">
+    <table class="table-base">
+        <thead class="bg-slate-50">
+            <tr><th>Name</th><th>Description</th><th class="text-right">Actions</th></tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+            {% for category in page_obj %}
+            {% url 'categories:update' category.pk as category_edit_url %}
+            {% url 'categories:delete' category.pk as category_delete_url %}
+            <tr class="table-row-hover">
+                <td class="font-medium text-slate-900 dark:text-white">{{ category.category_name }}</td>
+                <td class="text-slate-500">{{ category.description|default:"—"|truncatechars:80 }}</td>
+                <td>
+                    {% include "_row_actions.html" with edit_url=category_edit_url delete_url=category_delete_url edit_title="Edit "|add:category.category_name delete_title="Delete category" delete_message="Products in this category will keep their data, but the category will no longer be available for new products. This cannot be undone." %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="3" class="py-8 text-center text-slate-400">No categories yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% include "pagination.html" with page_obj=page_obj %}
+{% endblock %}

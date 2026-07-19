@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block title %}Order #{{ order.pk }}{% endblock %}
+{% block content %}
+{% if not is_modal %}<h1 class="mb-6 text-2xl font-bold text-slate-900 dark:text-white">Order #{{ order.pk }}</h1>{% endif %}
+
+<div class="grid gap-6 lg:grid-cols-3">
+    <div class="card lg:col-span-2">
+        <h2 class="mb-4 text-lg font-bold text-slate-900 dark:text-white">Items</h2>
+        <table class="table-base">
+            <thead><tr><th>Product</th><th>Qty</th><th>Unit price</th><th>Subtotal</th></tr></thead>
+            <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+                {% for item in order.items.all %}
+                <tr>
+                    <td>{{ item.product.product_name }}</td>
+                    <td>{{ item.quantity }}</td>
+                    <td>{{ item.unit_price|floatformat:0|intcomma }} RWF</td>
+                    <td>{{ item.subtotal|floatformat:0|intcomma }} RWF</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <div class="mt-4 ml-auto max-w-xs space-y-1 text-sm">
+            <div class="flex justify-between text-slate-500"><span>Subtotal</span><span>{{ order.subtotal_amount|floatformat:0|intcomma }} RWF</span></div>
+            {% if order.discount_amount %}
+            <div class="flex justify-between text-brand-green-600"><span>Discount{% if order.coupon %} ({{ order.coupon.code }}){% endif %}</span><span>&minus;{{ order.discount_amount|floatformat:0|intcomma }} RWF</span></div>
+            {% endif %}
+            {% if order.tax_amount %}<div class="flex justify-between text-slate-500"><span>Tax</span><span>{{ order.tax_amount|floatformat:0|intcomma }} RWF</span></div>{% endif %}
+            {% if order.shipping_amount %}<div class="flex justify-between text-slate-500"><span>Shipping</span><span>{{ order.shipping_amount|floatformat:0|intcomma }} RWF</span></div>{% endif %}
+            <div class="flex justify-between border-t border-slate-200 pt-1 text-lg font-bold text-slate-900 dark:border-slate-700 dark:text-white"><span>Total</span><span>{{ order.total_amount|floatformat:0|intcomma }} RWF</span></div>
+        </div>
+    </div>
+
+    <div class="space-y-4">
+        <div class="card">
+            <h2 class="mb-2 text-sm font-semibold uppercase text-slate-400">Details</h2>
+            <p class="text-sm"><span class="text-slate-400">Store:</span> {{ order.tenant.business_name }}</p>
+            <p class="text-sm"><span class="text-slate-400">Customer:</span> {{ order.user.get_full_name|default:order.user.username }}</p>
+            <p class="text-sm"><span class="text-slate-400">Shipping:</span> {{ order.shipping_address }}</p>
+            <p class="text-sm"><span class="text-slate-400">Payment:</span> {{ order.payment_method }} ({{ order.payment_status }})</p>
+            <p class="text-sm"><span class="text-slate-400">Placed:</span> {{ order.order_date|date:"M d, Y H:i" }}</p>
+        </div>
+
+        {% if status_form %}
+        <div class="card">
+            <h2 class="mb-3 text-sm font-semibold uppercase text-slate-400">Update status</h2>
+            <form method="post" class="space-y-3">
+                {% csrf_token %}
+                <div>
+                    <label class="form-label" for="{{ status_form.order_status.id_for_label }}">Order status</label>
+                    {{ status_form.order_status }}
+                </div>
+                <div>
+                    <label class="form-label" for="{{ status_form.payment_status.id_for_label }}">Payment status</label>
+                    {{ status_form.payment_status }}
+                </div>
+                <button type="submit" class="btn-primary w-full">Update</button>
+            </form>
+        </div>
+        {% if order.order_status == "Return Requested" %}
+        <div class="card border-amber-200 dark:border-amber-800">
+            <h2 class="mb-2 text-sm font-semibold uppercase text-amber-600">Return requested</h2>
+            <p class="mb-3 text-sm text-slate-600 dark:text-slate-300">{{ order.return_reason }}</p>
+            <div class="flex gap-2">
+                <form method="post" action="{% url 'orders:process_return' order.pk %}" class="flex-1">
+                    {% csrf_token %}
+                    <input type="hidden" name="decision" value="approve">
+                    <button type="submit" class="btn-primary w-full bg-brand-green-600 hover:bg-brand-green-700 focus:ring-brand-green-500">Approve</button>
+                </form>
+                <form method="post" action="{% url 'orders:process_return' order.pk %}" class="flex-1">
+                    {% csrf_token %}
+                    <input type="hidden" name="decision" value="reject">
+                    <button type="submit" class="btn-outline w-full">Reject</button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+        {% else %}
+        <div class="card">
+            <p class="text-xs uppercase text-slate-400">Status</p>
+            <span class="badge-blue">{{ order.order_status }}</span>
+        </div>
+        {% if order.order_status == "Return Requested" or order.order_status == "Returned" %}
+        <div class="card">
+            <h2 class="mb-2 text-sm font-semibold uppercase text-slate-400">Return reason</h2>
+            <p class="text-sm text-slate-600 dark:text-slate-300">{{ order.return_reason }}</p>
+        </div>
+        {% elif return_form and order.order_status == "Delivered" %}
+        <div class="card">
+            <h2 class="mb-2 text-sm font-semibold uppercase text-slate-400">Not happy with this order?</h2>
+            <form method="post" action="{% url 'orders:request_return' order.pk %}" class="space-y-3">
+                {% csrf_token %}
+                {{ return_form.return_reason }}
+                {% if return_form.return_reason.errors %}<p class="text-xs text-red-600">{{ return_form.return_reason.errors|join:', ' }}</p>{% endif %}
+                <button type="submit" class="btn-outline w-full">Request return</button>
+            </form>
+        </div>
+        {% endif %}
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

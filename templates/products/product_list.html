@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% load static humanize %}
+{% block title %}Shop{% endblock %}
+{% block content %}
+<h1 class="mb-6 text-2xl font-bold text-slate-900 dark:text-white">Shop products</h1>
+
+<form method="get" id="filter-form" class="card mb-8">
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
+        <div class="sm:col-span-2 lg:col-span-2">
+            <label class="form-label" for="id_q">Search</label>
+            <input type="text" name="q" id="id_q" data-autosubmit value="{{ query }}" placeholder="Product name, SKU..." class="form-input">
+        </div>
+
+        <div>
+            <label class="form-label" for="id_category">Category</label>
+            <select name="category" id="id_category" onchange="this.form.submit()" class="form-input">
+                <option value="">All categories</option>
+                {% for name in categories %}
+                <option value="{{ name }}" {% if category_name == name %}selected{% endif %}>{{ name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div>
+            <label class="form-label" for="id_store">Store</label>
+            <select name="store" id="id_store" onchange="this.form.submit()" class="form-input">
+                <option value="">All stores</option>
+                {% for store in stores %}
+                <option value="{{ store.pk }}" {% if tenant_id == store.pk|stringformat:"s" %}selected{% endif %}>{{ store.business_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div>
+            <label class="form-label" for="id_min_rating">Minimum rating</label>
+            <select name="min_rating" id="id_min_rating" onchange="this.form.submit()" class="form-input">
+                <option value="">Any rating</option>
+                <option value="4" {% if min_rating == "4" %}selected{% endif %}>4★ &amp; up</option>
+                <option value="3" {% if min_rating == "3" %}selected{% endif %}>3★ &amp; up</option>
+                <option value="2" {% if min_rating == "2" %}selected{% endif %}>2★ &amp; up</option>
+                <option value="1" {% if min_rating == "1" %}selected{% endif %}>1★ &amp; up</option>
+            </select>
+        </div>
+
+        <div>
+            <label class="form-label" for="id_sort">Sort by</label>
+            <select name="sort" id="id_sort" onchange="this.form.submit()" class="form-input">
+                <option value="newest" {% if sort == "newest" %}selected{% endif %}>Newest</option>
+                <option value="price_asc" {% if sort == "price_asc" %}selected{% endif %}>Price: Low to High</option>
+                <option value="price_desc" {% if sort == "price_desc" %}selected{% endif %}>Price: High to Low</option>
+                <option value="name_asc" {% if sort == "name_asc" %}selected{% endif %}>Name: A–Z</option>
+                <option value="rating" {% if sort == "rating" %}selected{% endif %}>Highest Rated</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="mt-4 flex flex-wrap items-end gap-4">
+        <div>
+            <label class="form-label">Price range (RWF)</label>
+            <div class="flex items-center gap-2">
+                <input type="number" name="min_price" data-autosubmit value="{{ min_price }}" placeholder="Min" min="0" class="form-input w-32">
+                <span class="text-slate-400">–</span>
+                <input type="number" name="max_price" data-autosubmit value="{{ max_price }}" placeholder="Max" min="0" class="form-input w-32">
+            </div>
+        </div>
+
+        <label class="flex items-center gap-2 pb-2 text-sm text-slate-700 dark:text-slate-300">
+            <input type="checkbox" name="discount" value="1" onchange="this.form.submit()" {% if discount_only %}checked{% endif %} class="h-4 w-4 rounded border-slate-300 text-brand-blue-600 focus:ring-brand-blue-500">
+            On sale only
+        </label>
+
+        <noscript><button type="submit" class="btn-primary">Apply filters</button></noscript>
+        <a href="{% url 'products:list' %}" class="btn-outline">Reset filters</a>
+    </div>
+</form>
+
+<div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" id="product-grid">
+    {% for product in page_obj %}
+    <a href="{% url 'products:detail' product.pk %}" class="card group flex flex-col p-0 transition hover:shadow-md">
+        <div class="aspect-square w-full overflow-hidden rounded-t-xl bg-slate-100 dark:bg-slate-700">
+            {% if product.image %}
+            <img src="{{ product.image.url }}" alt="{{ product.product_name }}" class="h-full w-full object-cover transition group-hover:scale-105">
+            {% else %}
+            <div class="flex h-full items-center justify-center text-slate-300">No image</div>
+            {% endif %}
+        </div>
+        <div class="flex flex-1 flex-col p-4">
+            <p class="text-xs font-medium uppercase tracking-wide text-brand-green-600">{{ product.tenant.business_name }}</p>
+            <h3 class="mt-1 line-clamp-2 flex-1 font-semibold text-slate-900 dark:text-white">{{ product.product_name }}</h3>
+            <div class="mt-2 flex items-center gap-2">
+                <span class="text-lg font-bold text-brand-blue-700 dark:text-brand-blue-300">{{ product.display_price|floatformat:0|intcomma }} RWF</span>
+                {% if product.discount_price %}<span class="text-sm text-slate-400 line-through">{{ product.price|floatformat:0|intcomma }} RWF</span>{% endif %}
+            </div>
+        </div>
+    </a>
+    {% empty %}
+    <p class="col-span-full py-16 text-center text-slate-400">No products match these filters.</p>
+    {% endfor %}
+</div>
+
+{% include "pagination.html" with page_obj=page_obj base_query=base_query %}
+{% endblock %}
+{% block extra_js %}
+<script>
+// Debounced auto-submit for the search/price text inputs (selects and the
+// checkbox already submit instantly via onchange).
+document.querySelectorAll('#filter-form [data-autosubmit]').forEach((input) => {
+    let timer;
+    input.addEventListener('input', () => {
+        clearTimeout(timer);
+        timer = setTimeout(() => input.form.requestSubmit(), 600);
+    });
+});
+</script>
+{% endblock %}

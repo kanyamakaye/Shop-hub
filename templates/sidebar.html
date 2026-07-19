@@ -1,0 +1,41 @@
+{% load static %}
+<aside class="h-full w-56 shrink-0">
+    <nav class="card sticky top-20 flex h-full flex-col space-y-1 overflow-y-auto p-3">
+        <a href="{% url 'home:index' %}" class="sidebar-link flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4">
+                <path d="m3 12 9-9 9 9" />
+                <path d="M5 10v10a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V10" />
+            </svg>
+            Home
+        </a>
+        <hr class="my-2 border-slate-200 dark:border-slate-700">
+        {% if user.role == 'System Owner' %}
+            <p class="px-2 pb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">Owner</p>
+            <a href="{% url 'dashboard:owner' %}" class="sidebar-link flex items-center gap-2">{% include "_sidebar_icon.html" with icon="dashboard" color="blue" %} Dashboard</a>
+            <a href="{% url 'subscriptions:list' %}" class="sidebar-link flex items-center gap-2">{% include "_sidebar_icon.html" with icon="plans" color="green" %} Subscription Plans</a>
+            <a href="{% url 'tenants:list' %}" class="sidebar-link flex items-center gap-2">{% include "_sidebar_icon.html" with icon="org" color="blue" %} Organizations</a>
+            <a href="{% url 'accounts:user_list' %}" class="sidebar-link flex items-center gap-2">{% include "_sidebar_icon.html" with icon="users" color="green" %} All Users</a>
+            <a href="{% url 'wishlist:overview' %}" class="sidebar-link flex items-center gap-2">{% include "_sidebar_icon.html" with icon="wishlist" color="blue" %} Wishlist Activity</a>
+            <a href="{% url 'cart:overview' %}" class="sidebar-link flex items-center gap-2">{% include "_sidebar_icon.html" with icon="cart" color="green" %} Cart Activity</a>
+        {% elif user.role == 'System Admin' %}
+            <p class="px-2 pb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">{{ user.tenant.business_name }}</p>
+            <a href="{% url 'dashboard:tenant' %}" class="sidebar-link flex items-center gap-2">{% include "_sidebar_icon.html" with icon="dashboard" color="blue" %} Dashboard</a>
+            <a href="{% url 'categories:list' %}" class="sidebar-link flex items-center gap-2">{% include "_sidebar_icon.html" with icon="categories" color="green" %} Categories</a>
+            <a href="{% url 'products:manage_list' %}" class="sidebar-link flex items-center gap-2">{% include "_sidebar_icon.html" with icon="products" color="blue" %} Products</a>
+            <a href="{% url 'orders:list' %}" class="sidebar-link flex items-center gap-2">{% include "_sidebar_icon.html" with icon="orders" color="green" %} Orders</a>
+            <a href="{% url 'coupons:list' %}" class="sidebar-link flex items-center gap-2">{% include "_sidebar_icon.html" with icon="tag" color="blue" %} Coupons</a>
+            <a href="{% url 'accounts:user_list' %}" class="sidebar-link flex items-center gap-2">{% include "_sidebar_icon.html" with icon="users" color="green" %} Staff &amp; Customers</a>
+            <a href="{% url 'wishlist:overview' %}" class="sidebar-link flex items-center gap-2">{% include "_sidebar_icon.html" with icon="wishlist" color="green" %} Wishlist Activity</a>
+            <a href="{% url 'cart:overview' %}" class="sidebar-link flex items-center gap-2">{% include "_sidebar_icon.html" with icon="cart" color="blue" %} Cart Activity</a>
+            <a href="{% url 'notifications:list' %}" class="sidebar-link flex items-center gap-2">{% include "_sidebar_icon.html" with icon="bell" color="green" %} Notifications</a>
+        {% else %}
+            <p class="px-2 pb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">My Account</p>
+            <a href="{% url 'dashboard:customer' %}" class="sidebar-link flex items-center gap-2">{% include "_sidebar_icon.html" with icon="dashboard" color="blue" %} Dashboard</a>
+            <a href="{% url 'orders:list' %}" class="sidebar-link flex items-center gap-2">{% include "_sidebar_icon.html" with icon="orders" color="green" %} My Orders</a>
+            <a href="{% url 'wishlist:list' %}" class="sidebar-link flex items-center gap-2">{% include "_sidebar_icon.html" with icon="wishlist" color="blue" %} Wishlist</a>
+            <a href="{% url 'notifications:list' %}" class="sidebar-link flex items-center gap-2">{% include "_sidebar_icon.html" with icon="bell" color="green" %} Notifications</a>
+            <a href="{% url 'accounts:profile' %}" class="sidebar-link flex items-center gap-2">{% include "_sidebar_icon.html" with icon="profile" color="blue" %} Profile</a>
+            <a href="{% url 'accounts:change_password' %}" class="sidebar-link flex items-center gap-2">{% include "_sidebar_icon.html" with icon="lock" color="green" %} Change Password</a>
+        {% endif %}
+    </nav>
+</aside>

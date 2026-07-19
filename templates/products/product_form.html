@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{% if product %}Edit product{% else %}New product{% endif %}{% endblock %}
+{% block content %}
+{% if product %}
+<div class="mx-auto max-w-2xl">
+    {% if not is_modal %}
+    <div class="mb-6 flex items-center gap-3">
+        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-blue-100 text-xl dark:bg-brand-blue-900/40">📦</span>
+        <h1 class="text-2xl font-bold text-slate-900 dark:text-white">Edit product</h1>
+    </div>
+    {% endif %}
+{% else %}
+{% include "_form_header.html" with icon="📦" title="New Product" subtitle="Add a product to your store's catalog." %}
+<div class="mx-auto max-w-2xl">
+{% endif %}
+    <div class="card">
+        {% include "_form_section.html" with icon="📝" title="Product details" %}
+        <form method="post" enctype="multipart/form-data" novalidate id="product-form" class="space-y-4">
+            {% csrf_token %}
+            <div class="grid gap-4 sm:grid-cols-2">
+                <div>
+                    <label class="form-label" for="{{ form.product_name.id_for_label }}">Product name <span class="form-required">*</span></label>
+                    {{ form.product_name }}
+                    {% if form.product_name.errors %}<p class="mt-1 text-xs text-red-600">{{ form.product_name.errors|join:', ' }}</p>{% endif %}
+                </div>
+                <div>
+                    <label class="form-label" for="{{ form.sku.id_for_label }}">SKU <span class="form-required">*</span></label>
+                    {{ form.sku }}
+                    {% if form.sku.errors %}<p class="mt-1 text-xs text-red-600">{{ form.sku.errors|join:', ' }}</p>{% endif %}
+                </div>
+            </div>
+            <div class="grid gap-4 sm:grid-cols-2">
+                <div>
+                    <label class="form-label" for="{{ form.category.id_for_label }}">Category <span class="form-required">*</span></label>
+                    {{ form.category }}
+                </div>
+                <div>
+                    <label class="form-label" for="{{ form.status.id_for_label }}">Status</label>
+                    {{ form.status }}
+                </div>
+            </div>
+            <div>
+                <label class="form-label" for="{{ form.description.id_for_label }}">Description <span class="text-slate-400">(optional)</span></label>
+                {{ form.description }}
+            </div>
+
+            <div class="pt-2">
+                {% include "_form_section.html" with icon="💰" title="Pricing & media" %}
+            </div>
+            <div class="grid gap-4 sm:grid-cols-2">
+                <div>
+                    <label class="form-label" for="{{ form.price.id_for_label }}">Price <span class="form-required">*</span></label>
+                    {{ form.price }}
+                    {% if form.price.errors %}<p class="mt-1 text-xs text-red-600">{{ form.price.errors|join:', ' }}</p>{% endif %}
+                </div>
+                <div>
+                    <label class="form-label" for="{{ form.discount_price.id_for_label }}">Discount price <span class="text-slate-400">(optional)</span></label>
+                    {{ form.discount_price }}
+                    <p id="price-error" class="mt-1 hidden text-xs text-red-600">Discount price must be lower than the regular price.</p>
+                    {% if form.discount_price.errors %}<p class="mt-1 text-xs text-red-600">{{ form.discount_price.errors|join:', ' }}</p>{% endif %}
+                </div>
+            </div>
+            <div>
+                <label class="form-label" for="{{ form.image.id_for_label }}">Image <span class="text-slate-400">(optional)</span></label>
+                {% if product.image %}<img src="{{ product.image.url }}" class="mb-2 h-24 w-24 rounded-lg object-cover" alt="">{% endif %}
+                {{ form.image }}
+                <img id="image-preview" class="mt-2 hidden h-24 w-24 rounded-lg object-cover" alt="Preview">
+                <p class="mt-1 text-xs text-slate-400">PNG or JPG, up to 5MB.</p>
+            </div>
+
+            <div class="pt-2">
+                {% include "_form_section.html" with icon="📊" title="Inventory" %}
+            </div>
+            <div class="grid gap-4 sm:grid-cols-2">
+                <div>
+                    <label class="form-label" for="{{ form.stock_quantity.id_for_label }}">Stock quantity <span class="form-required">*</span></label>
+                    {{ form.stock_quantity }}
+                    {% if form.stock_quantity.errors %}<p class="mt-1 text-xs text-red-600">{{ form.stock_quantity.errors|join:', ' }}</p>{% endif %}
+                </div>
+                <div>
+                    <label class="form-label" for="{{ form.low_stock_threshold.id_for_label }}">Low stock alert at</label>
+                    {{ form.low_stock_threshold }}
+                    <p class="mt-1 text-xs text-slate-400">You'll get notified when stock falls to this level or below.</p>
+                </div>
+            </div>
+            <div class="form-actions">
+                <a href="{% url 'products:manage_list' %}" class="btn-outline">Cancel</a>
+                <button type="submit" class="btn-primary">{% if product %}Save changes{% else %}Create product{% endif %}</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const imageInput = document.getElementById('{{ form.image.id_for_label }}');
+    const preview = document.getElementById('image-preview');
+    if (imageInput) {
+        imageInput.addEventListener('change', () => {
+            const file = imageInput.files[0];
+            if (file) {
+                preview.src = URL.createObjectURL(file);
+                preview.classList.remove('hidden');
+            }
+        });
+    }
+
+    const priceInput = document.getElementById('{{ form.price.id_for_label }}');
+    const discountInput = document.getElementById('{{ form.discount_price.id_for_label }}');
+    const priceError = document.getElementById('price-error');
+    const form = document.getElementById('product-form');
+    function validatePrices() {
+        const price = parseFloat(priceInput.value);
+        const discount = parseFloat(discountInput.value);
+        const invalid = !isNaN(price) && !isNaN(discount) && discount >= price;
+        priceError.classList.toggle('hidden', !invalid);
+        return !invalid;
+    }
+    if (priceInput && discountInput) {
+        priceInput.addEventListener('input', validatePrices);
+        discountInput.addEventListener('input', validatePrices);
+        form.addEventListener('submit', (event) => {
+            if (!validatePrices()) event.preventDefault();
+        });
+    }
+});
+</script>
+{% endblock %}

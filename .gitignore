@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+venv/
+env/
+
+# Django
+db.sqlite3
+db.sqlite3-journal
+staticfiles/
+
+# Node / Tailwind
+node_modules/
+npm-debug.log*
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Debug/scratch artifacts left in project root during development
+check1.jpg
+check2.jpg
+cookies_admin_d.txt
+cookies_cust_d.txt
+cookies_owner_d.txt
+cust_dash_check.html
+owner_dash_check.html
+tenant_dash_check.html
+server_dash.log

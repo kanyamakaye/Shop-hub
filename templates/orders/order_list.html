@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block title %}Orders{% endblock %}
+{% block content %}
+<div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+    <h1 class="text-2xl font-bold text-slate-900 dark:text-white">
+        {% if user.role == "User" %}My orders{% else %}Orders{% endif %}
+    </h1>
+    {% if user.role != "User" %}<a href="?export=csv" class="btn-outline">Export CSV</a>{% endif %}
+</div>
+
+<form method="get" id="filter-form" class="card mb-6">
+    <div class="grid gap-4 sm:grid-cols-2">
+        <div>
+            <label class="form-label" for="id_order_status">Order status</label>
+            <select name="order_status" id="id_order_status" onchange="this.form.submit()" class="form-input">
+                <option value="">All statuses</option>
+                {% for value, label in order_status_choices %}
+                <option value="{{ value }}" {% if order_status == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label class="form-label" for="id_payment_status">Payment status</label>
+            <select name="payment_status" id="id_payment_status" onchange="this.form.submit()" class="form-input">
+                <option value="">All payment statuses</option>
+                {% for value, label in payment_status_choices %}
+                <option value="{{ value }}" {% if payment_status == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+    <div class="mt-4 grid gap-4 sm:grid-cols-2">
+        <div>
+            <label class="form-label">Order date range</label>
+            <div class="flex items-center gap-2">
+                <input type="date" name="date_from" value="{{ date_from }}" onchange="this.form.submit()" class="form-input min-w-0 flex-1">
+                <span class="shrink-0 text-slate-400">&ndash;</span>
+                <input type="date" name="date_to" value="{{ date_to }}" onchange="this.form.submit()" class="form-input min-w-0 flex-1">
+            </div>
+        </div>
+        <div>
+            <label class="form-label">Total (RWF)</label>
+            <div class="flex items-center gap-2">
+                <input type="number" name="min_total" data-autosubmit value="{{ min_total }}" placeholder="Min" min="0" class="form-input min-w-0 flex-1">
+                <span class="shrink-0 text-slate-400">&ndash;</span>
+                <input type="number" name="max_total" data-autosubmit value="{{ max_total }}" placeholder="Max" min="0" class="form-input min-w-0 flex-1">
+            </div>
+        </div>
+    </div>
+    <div class="mt-4 flex justify-end">
+        <noscript><button type="submit" class="btn-primary">Apply filters</button></noscript>
+        <a href="{% url 'orders:list' %}" class="btn-outline">Reset filters</a>
+    </div>
+</form>
+
+<div class="card overflow-x-auto p-0">
+    <table class="table-base">
+        <thead class="bg-slate-50">
+            <tr>
+                <th>Order</th>
+                {% if user.role != "User" %}<th>Customer</th>{% endif %}
+                <th>Date</th>
+                <th>Total</th>
+                <th>Payment</th>
+                <th>Status</th>
+                <th class="text-right">Actions</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+            {% for order in page_obj %}
+            {% url 'orders:detail' order.pk as order_view_url %}
+            <tr class="table-row-hover">
+                <td class="font-medium text-slate-900 dark:text-white">#{{ order.pk }}</td>
+                {% if user.role != "User" %}<td>{{ order.user.get_full_name|default:order.user.username }}</td>{% endif %}
+                <td>{{ order.order_date|date:"M d, Y" }}</td>
+                <td>{{ order.total_amount|floatformat:0|intcomma }} RWF</td>
+                <td>
+                    {% if order.payment_status == "Paid" %}<span class="badge-green">Paid</span>
+                    {% elif order.payment_status == "Failed" %}<span class="badge bg-red-100 text-red-700">Failed</span>
+                    {% else %}<span class="badge bg-amber-100 text-amber-700">Pending</span>{% endif %}
+                </td>
+                <td><span class="badge-blue">{{ order.order_status }}</span></td>
+                <td>
+                    {% if user.role == "System Admin" %}
+                    {% include "_row_actions.html" with view_url=order_view_url view_title="Order details" edit_url=order_view_url edit_title="Update order status" %}
+                    {% else %}
+                    {% include "_row_actions.html" with view_url=order_view_url view_title="Order details" %}
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="7" class="py-8 text-center text-slate-400">No orders yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% include "pagination.html" with page_obj=page_obj base_query=base_query %}
+{% endblock %}
+{% block extra_js %}
+<script>
+document.querySelectorAll('#filter-form [data-autosubmit]').forEach((input) => {
+    let timer;
+    input.addEventListener('input', () => {
+        clearTimeout(timer);
+        timer = setTimeout(() => input.form.requestSubmit(), 600);
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,85 @@
+{% extends "base_auth.html" %}
+{% load static %}
+{% block title %}Create account{% endblock %}
+{% block content %}
+{% include "_form_header.html" with icon="🛍️" title="Create your account" subtitle="Sign up once to shop across every store on ShopHub." %}
+<div class="mx-auto max-w-2xl">
+    <div class="card">
+        <form method="post" novalidate class="space-y-4">
+            {% csrf_token %}
+            {% if form.non_field_errors %}
+            <div class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{{ form.non_field_errors }}</div>
+            {% endif %}
+
+            <div class="grid gap-4 sm:grid-cols-2">
+                <div>
+                    <label class="form-label" for="{{ form.first_name.id_for_label }}">First name <span class="text-slate-400">(optional)</span></label>
+                    {{ form.first_name }}
+                </div>
+                <div>
+                    <label class="form-label" for="{{ form.last_name.id_for_label }}">Last name <span class="text-slate-400">(optional)</span></label>
+                    {{ form.last_name }}
+                </div>
+            </div>
+
+            <div class="grid gap-4 sm:grid-cols-2">
+                <div>
+                    <label class="form-label" for="{{ form.username.id_for_label }}">Username <span class="form-required">*</span></label>
+                    {{ form.username }}
+                    {% if form.username.errors %}<p class="mt-1 text-xs text-red-600">{{ form.username.errors|join:', ' }}</p>{% endif %}
+                </div>
+                <div>
+                    <label class="form-label" for="{{ form.email.id_for_label }}">Email <span class="text-slate-400">(optional)</span></label>
+                    {{ form.email }}
+                </div>
+            </div>
+
+            <div class="grid gap-4 sm:grid-cols-2">
+                <div>
+                    <label class="form-label" for="{{ form.phone.id_for_label }}">Phone <span class="text-slate-400">(optional)</span></label>
+                    {{ form.phone }}
+                </div>
+                <div>
+                    <label class="form-label" for="{{ form.postal_address.id_for_label }}">Postal address <span class="form-required">*</span></label>
+                    {{ form.postal_address }}
+                    {% if form.postal_address.errors %}<p class="mt-1 text-xs text-red-600">{{ form.postal_address.errors|join:', ' }}</p>{% endif %}
+                </div>
+            </div>
+
+            <div>
+                {% include "_form_section.html" with icon="📍" title="Location details" %}
+                <div class="grid gap-4 sm:grid-cols-2">
+                    {% for field in form %}
+                        {% if field.name in "province,district,sector,cell,village" %}
+                        <div>
+                            <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }} <span class="form-required">*</span></label>
+                            {{ field }}
+                            {% if field.errors %}<p class="mt-1 text-xs text-red-600">{{ field.errors|join:', ' }}</p>{% endif %}
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="grid gap-4 sm:grid-cols-2">
+                <div>
+                    <label class="form-label" for="{{ form.password1.id_for_label }}">Password <span class="form-required">*</span></label>
+                    {{ form.password1 }}
+                    {% if form.password1.errors %}<p class="mt-1 text-xs text-red-600">{{ form.password1.errors|join:', ' }}</p>{% endif %}
+                </div>
+                <div>
+                    <label class="form-label" for="{{ form.password2.id_for_label }}">Confirm password <span class="form-required">*</span></label>
+                    {{ form.password2 }}
+                    {% if form.password2.errors %}<p class="mt-1 text-xs text-red-600">{{ form.password2.errors|join:', ' }}</p>{% endif %}
+                </div>
+            </div>
+
+            <button type="submit" class="btn-primary w-full">Create account</button>
+            <p class="text-center text-sm text-slate-500">Already have an account? <a href="{% url 'accounts:login' %}" class="text-brand-blue-600 hover:underline">Log in</a></p>
+        </form>
+    </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script src="{% static 'js/location-cascade.js' %}"></script>
+{% endblock %}

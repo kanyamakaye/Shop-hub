@@ -1,0 +1,23 @@
+{% load humanize %}
+{% comment %}
+Shared dashboard KPI card. Required: icon (name, see _icon.html), icon_bg (a
+literal Tailwind class string, e.g. "bg-brand-blue-100 dark:bg-brand-blue-900/40"
+— must be written literally at each call site so Tailwind's scanner can see
+it), icon_color ("blue"/"green"/"orange", matching icon_bg), label, value.
+Optional: suffix, href, change (a percent number; renders a ▲/▼ badge),
+sub_text (plain caption shown when change is not provided).
+{% endcomment %}
+{% if href %}<a href="{{ href }}" class="card transition hover:shadow-md">{% else %}<div class="card">{% endif %}
+    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg {{ icon_bg }} {% if icon_color == "green" %}text-brand-green-700 dark:text-brand-green-300{% elif icon_color == "orange" %}text-brand-orange-700 dark:text-brand-orange-300{% else %}text-brand-blue-700 dark:text-brand-blue-300{% endif %}">
+        {% include "_icon.html" with name=icon size="h-5 w-5" %}
+    </span>
+    <p class="mt-3 text-xs font-semibold uppercase tracking-wide text-slate-400">{{ label }}</p>
+    <p class="text-2xl font-extrabold text-slate-900 dark:text-white">{{ value }}{% if suffix %}<span class="text-base font-medium text-slate-400"> {{ suffix }}</span>{% endif %}</p>
+    {% if change is not None %}
+    <p class="mt-1 text-xs font-semibold {% if change >= 0 %}text-brand-green-600{% else %}text-red-500{% endif %}">
+        {% if change >= 0 %}&#9650;{% else %}&#9660;{% endif %} {{ change|floatformat:1 }}% vs last month
+    </p>
+    {% elif sub_text %}
+    <p class="mt-1 text-xs text-slate-400">{{ sub_text }}</p>
+    {% endif %}
+{% if href %}</a>{% else %}</div>{% endif %}

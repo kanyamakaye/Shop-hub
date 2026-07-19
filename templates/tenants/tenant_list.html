@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}Organizations{% endblock %}
+{% block content %}
+<div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+    <h1 class="text-2xl font-bold text-slate-900 dark:text-white">Organizations</h1>
+    <a href="{% url 'tenants:create' %}" class="btn-primary">+ New organization</a>
+</div>
+
+<form method="get" id="filter-form" class="card mb-6">
+    <div class="grid gap-4 sm:grid-cols-3">
+        <div>
+            <label class="form-label" for="id_q">Search</label>
+            <input type="text" name="q" id="id_q" data-autosubmit value="{{ query }}" placeholder="Name or email..." class="form-input">
+        </div>
+        <div>
+            <label class="form-label" for="id_plan">Plan</label>
+            <select name="plan" id="id_plan" onchange="this.form.submit()" class="form-input">
+                <option value="">All plans</option>
+                {% for plan in plans %}
+                <option value="{{ plan.pk }}" {% if plan_id == plan.pk|stringformat:"s" %}selected{% endif %}>{{ plan.plan_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label class="form-label" for="id_status">Status</label>
+            <select name="status" id="id_status" onchange="this.form.submit()" class="form-input">
+                <option value="">All statuses</option>
+                {% for value, label in status_choices %}
+                <option value="{{ value }}" {% if status == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+    <div class="mt-4 flex justify-end">
+        <noscript><button type="submit" class="btn-primary">Apply filters</button></noscript>
+        <a href="{% url 'tenants:list' %}" class="btn-outline">Reset filters</a>
+    </div>
+</form>
+
+<div class="card overflow-x-auto p-0">
+    <table class="table-base">
+        <thead class="bg-slate-50">
+            <tr>
+                <th>Organization</th>
+                <th>Plan</th>
+                <th>Email</th>
+                <th>Country</th>
+                <th>Status</th>
+                <th class="text-right">Actions</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+            {% for tenant in page_obj %}
+            {% url 'tenants:detail' tenant.pk as tenant_view_url %}
+            {% url 'tenants:update' tenant.pk as tenant_edit_url %}
+            {% url 'tenants:delete' tenant.pk as tenant_delete_url %}
+            <tr class="table-row-hover">
+                <td class="flex items-center gap-3 font-medium text-slate-900 dark:text-white">
+                    {% if tenant.logo %}<img src="{{ tenant.logo.url }}" class="h-8 w-8 rounded-lg object-cover" alt="">
+                    {% else %}<span class="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-blue-100 text-xs font-bold text-brand-blue-700 dark:bg-brand-blue-900/40 dark:text-brand-blue-300">{{ tenant.business_name|slice:":1" }}</span>{% endif %}
+                    <a href="{{ tenant_view_url }}" data-modal-view="{{ tenant_view_url }}" data-modal-title="{{ tenant.business_name }}" class="hover:text-brand-blue-700">{{ tenant.business_name }}</a>
+                </td>
+                <td><span class="badge-blue">{{ tenant.plan.plan_name }}</span></td>
+                <td>{{ tenant.email }}</td>
+                <td>{{ tenant.country }}</td>
+                <td>
+                    {% if tenant.status == "Active" %}<span class="badge-green">Active</span>
+                    {% else %}<span class="badge bg-slate-100 text-slate-600">{{ tenant.status }}</span>{% endif %}
+                </td>
+                <td>
+                    {% include "_row_actions.html" with edit_url=tenant_edit_url delete_url=tenant_delete_url edit_title="Edit "|add:tenant.business_name delete_title="Delete organization" delete_message="This permanently removes this organization and all of its staff logins, categories and products. This cannot be undone." %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="py-8 text-center text-slate-400">No organizations found.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% include "pagination.html" with page_obj=page_obj base_query=base_query %}
+{% endblock %}
+{% block extra_js %}
+<script>
+document.querySelectorAll('#filter-form [data-autosubmit]').forEach((input) => {
+    let timer;
+    input.addEventListener('input', () => {
+        clearTimeout(timer);
+        timer = setTimeout(() => input.form.requestSubmit(), 600);
+    });
+});
+</script>
+{% endblock %}

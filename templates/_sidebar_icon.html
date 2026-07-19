@@ -1,0 +1,8 @@
+{% comment %}Colored icon badge for sidebar links. Params: icon (name, see _icon.html), color ("blue" or "green").{% endcomment %}
+{% if color == "green" %}
+<span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-brand-green-100 text-brand-green-700 dark:bg-brand-green-900/40 dark:text-brand-green-300">
+{% else %}
+<span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-brand-blue-100 text-brand-blue-700 dark:bg-brand-blue-900/40 dark:text-brand-blue-300">
+{% endif %}
+{% include "_icon.html" with name=icon size="h-4 w-4" %}
+</span>

@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}{{ tenant.business_name }}{% endblock %}
+{% block content %}
+{% if not is_modal %}
+<div class="mb-6 flex items-center justify-between">
+    <h1 class="text-2xl font-bold text-slate-900 dark:text-white">{{ tenant.business_name }}</h1>
+    <a href="{% url 'tenants:update' tenant.pk %}" data-modal-edit="{% url 'tenants:update' tenant.pk %}" data-modal-title="Edit {{ tenant.business_name }}" class="btn-outline">Edit</a>
+</div>
+{% else %}
+<div class="mb-4 flex justify-end">
+    <a href="{% url 'tenants:update' tenant.pk %}" data-modal-edit="{% url 'tenants:update' tenant.pk %}" data-modal-title="Edit {{ tenant.business_name }}" class="btn-outline">Edit</a>
+</div>
+{% endif %}
+<div class="card grid gap-4 sm:grid-cols-2">
+    {% if tenant.logo %}<img src="{{ tenant.logo.url }}" class="h-24 w-24 rounded-lg object-cover sm:col-span-2" alt="">{% endif %}
+    <div><p class="text-xs uppercase text-slate-400">Plan</p><p class="font-medium">{{ tenant.plan.plan_name }}</p></div>
+    <div><p class="text-xs uppercase text-slate-400">Status</p><p class="font-medium">{{ tenant.status }}</p></div>
+    <div><p class="text-xs uppercase text-slate-400">Email</p><p class="font-medium">{{ tenant.email }}</p></div>
+    <div><p class="text-xs uppercase text-slate-400">Phone</p><p class="font-medium">{{ tenant.phone }}</p></div>
+    <div><p class="text-xs uppercase text-slate-400">WhatsApp</p><p class="font-medium">{{ tenant.whatsapp_number|default:"—" }}</p></div>
+    <div><p class="text-xs uppercase text-slate-400">Country</p><p class="font-medium">{{ tenant.country }}</p></div>
+    <div><p class="text-xs uppercase text-slate-400">Address</p><p class="font-medium">{{ tenant.address }}</p></div>
+</div>
+
+<div class="card mt-6">
+    <div class="mb-4 flex items-center justify-between">
+        <h2 class="text-lg font-bold text-slate-900 dark:text-white">Manage organization</h2>
+        <div class="flex gap-2">
+            <a href="{% url 'accounts:user_list' %}?tenant={{ tenant.pk }}" class="btn-outline">View all staff</a>
+            <a href="{% url 'accounts:user_create' %}?tenant={{ tenant.pk }}" class="btn-primary">+ Add admin</a>
+        </div>
+    </div>
+    <table class="table-base">
+        <thead><tr><th>Admin</th><th>Username</th><th>Status</th><th class="text-right">Actions</th></tr></thead>
+        <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+            {% for admin in admins %}
+            {% url 'accounts:user_update' admin.pk as admin_edit_url %}
+            {% url 'accounts:user_delete' admin.pk as admin_delete_url %}
+            <tr class="table-row-hover">
+                <td>{{ admin.get_full_name|default:admin.username }}</td>
+                <td>{{ admin.username }}</td>
+                <td>
+                    {% if admin.status == "Active" %}<span class="badge-green">Active</span>
+                    {% else %}<span class="badge bg-slate-100 text-slate-600">{{ admin.status }}</span>{% endif %}
+                </td>
+                <td>{% include "_row_actions.html" with edit_url=admin_edit_url delete_url=admin_delete_url edit_title="Edit "|add:admin.username delete_title="Remove admin" delete_message="This permanently removes this admin's login. They will no longer be able to manage this store. This cannot be undone." %}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="py-6 text-center text-slate-400">No admin account yet — add one so this organization can log in and manage their store.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

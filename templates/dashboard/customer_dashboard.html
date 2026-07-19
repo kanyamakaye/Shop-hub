@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block title %}My dashboard{% endblock %}
+{% block content %}
+{% include "dashboard/_banner.html" with icon="bag" title=banner_title subtitle=banner_subtitle %}
+
+<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    {% include "dashboard/_kpi_card.html" with icon="orders" icon_color="blue" icon_bg="bg-brand-blue-100 dark:bg-brand-blue-900/40" label="Orders" value=order_count href="/orders/" %}
+    {% include "dashboard/_kpi_card.html" with icon="cart" icon_color="orange" icon_bg="bg-brand-orange-100 dark:bg-brand-orange-900/40" label="Cart" value=cart_count sub_text="items ready to check out" href="/cart/" %}
+    {% include "dashboard/_kpi_card.html" with icon="wishlist" icon_color="green" icon_bg="bg-brand-green-100 dark:bg-brand-green-900/40" label="Wishlist" value=wishlist_count href="/wishlist/" %}
+    {% include "dashboard/_kpi_card.html" with icon="star" icon_color="blue" icon_bg="bg-brand-blue-100 dark:bg-brand-blue-900/40" label="Reviews" value=review_count %}
+    {% include "dashboard/_kpi_card.html" with icon="bell" icon_color="green" icon_bg="bg-brand-green-100 dark:bg-brand-green-900/40" label="Notifications" value=notification_count href="/notifications/" %}
+</div>
+
+<div class="mt-6 grid gap-6 lg:grid-cols-3">
+    <div class="card lg:col-span-2">
+        <h2 class="mb-4 text-sm font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Orders placed (last 6 months)</h2>
+        <canvas id="orders-chart" height="110"></canvas>
+    </div>
+    <div class="card">
+        <h2 class="mb-4 text-sm font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Orders by status</h2>
+        {% include "dashboard/_progress_bars.html" with rows=status_rows total=status_total empty_text="No orders yet." %}
+    </div>
+</div>
+
+<div class="card mt-6">
+    <h2 class="mb-4 text-lg font-bold text-slate-900 dark:text-white">Recent orders</h2>
+    <table class="table-base">
+        <thead><tr><th>Order</th><th>Store</th><th>Total</th><th>Status</th></tr></thead>
+        <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+            {% for order in recent_orders %}
+            <tr>
+                <td><a href="{% url 'orders:detail' order.pk %}" class="hover:text-brand-blue-700">#{{ order.pk }}</a></td>
+                <td>{{ order.tenant.business_name }}</td>
+                <td>{{ order.total_amount|floatformat:0|intcomma }} RWF</td>
+                <td><span class="badge-blue">{{ order.order_status }}</span></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="py-6 text-center text-slate-400">No orders yet. <a href="{% url 'products:list' %}" class="text-brand-blue-600 hover:underline">Start shopping</a>.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+{{ order_labels|json_script:"order-labels" }}
+{{ order_values|json_script:"order-values" }}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const isDark = document.documentElement.classList.contains('dark');
+    const gridColor = isDark ? 'rgba(148,163,184,0.15)' : 'rgba(100,116,139,0.1)';
+    const tickColor = isDark ? '#94a3b8' : '#64748b';
+
+    new Chart(document.getElementById('orders-chart'), {
+        type: 'bar',
+        data: {
+            labels: JSON.parse(document.getElementById('order-labels').textContent),
+            datasets: [{
+                label: 'Orders',
+                data: JSON.parse(document.getElementById('order-values').textContent),
+                backgroundColor: '#0a9c60',
+                borderRadius: 6,
+            }],
+        },
+        options: {
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { grid: { display: false }, ticks: { color: tickColor } },
+                y: { grid: { color: gridColor }, ticks: { color: tickColor, precision: 0 } },
+            },
+        },
+    });
+});
+</script>
+{% endblock %}

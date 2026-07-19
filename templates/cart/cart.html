@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% load static humanize %}
+{% block title %}Your cart{% endblock %}
+{% block content %}
+<h1 class="mb-6 text-2xl font-bold text-slate-900 dark:text-white">Your cart</h1>
+
+{% if items %}
+<div class="grid gap-8 lg:grid-cols-3">
+    <div class="space-y-4 lg:col-span-2">
+        {% for item in items %}
+        <div class="card flex items-center gap-4" data-cart-row data-price="{{ item.product.display_price }}">
+            <div class="h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-slate-100">
+                {% if item.product.image %}<img src="{{ item.product.image.url }}" class="h-full w-full object-cover" alt="">{% endif %}
+            </div>
+            <div class="min-w-0 flex-1">
+                <a href="{% url 'products:detail' item.product.pk %}" class="font-semibold text-slate-900 dark:text-white hover:text-brand-blue-700">{{ item.product.product_name }}</a>
+                <p class="text-sm text-slate-500">{{ item.product.display_price|floatformat:0|intcomma }} RWF each</p>
+            </div>
+            <form action="{% url 'cart:update' item.pk %}" method="post" class="flex items-center gap-2">
+                {% csrf_token %}
+                <button type="button" class="qty-btn btn-outline h-8 w-8 p-0" data-step="-1">−</button>
+                <input type="number" name="quantity" value="{{ item.quantity }}" min="1" class="form-input w-16 text-center" data-qty-input>
+                <button type="button" class="qty-btn btn-outline h-8 w-8 p-0" data-step="1">+</button>
+                <button type="submit" class="btn-outline">Update</button>
+            </form>
+            <p class="w-24 text-right font-semibold" data-row-subtotal>{{ item.subtotal|floatformat:0|intcomma }} RWF</p>
+            <button type="button" data-modal-delete="{% url 'cart:remove' item.pk %}" data-modal-title="Remove item" data-modal-message="Remove {{ item.product.product_name }} from your cart?" class="text-red-600 hover:underline">Remove</button>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="card h-fit">
+        <h2 class="mb-4 text-lg font-bold text-slate-900 dark:text-white">Order summary</h2>
+        <div class="flex justify-between text-sm text-slate-600">
+            <span>Subtotal</span>
+            <span id="cart-total">{{ total|floatformat:0|intcomma }} RWF</span>
+        </div>
+        <a href="{% url 'orders:checkout' %}" class="btn-primary mt-6 w-full justify-center">Proceed to checkout</a>
+    </div>
+</div>
+{% else %}
+<div class="card py-16 text-center">
+    <p class="text-slate-400">Your cart is empty.</p>
+    <a href="{% url 'products:list' %}" class="btn-primary mt-4 inline-flex">Continue shopping</a>
+</div>
+{% endif %}
+{% endblock %}
+{% block extra_js %}
+<script src="{% static 'js/cart.js' %}"></script>
+{% endblock %}

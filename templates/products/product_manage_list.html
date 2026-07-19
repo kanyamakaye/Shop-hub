@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block title %}My products{% endblock %}
+{% block content %}
+<div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+    <h1 class="text-2xl font-bold text-slate-900 dark:text-white">Products</h1>
+    <div class="flex gap-2">
+        <a href="?export=csv" class="btn-outline">Export CSV</a>
+        <a href="{% url 'products:create' %}" class="btn-primary">+ New product</a>
+    </div>
+</div>
+
+<form method="get" id="filter-form" class="card mb-6">
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div>
+            <label class="form-label" for="id_q">Search</label>
+            <input type="text" name="q" id="id_q" data-autosubmit value="{{ query }}" placeholder="Product name, SKU..." class="form-input">
+        </div>
+        <div>
+            <label class="form-label" for="id_category">Category</label>
+            <select name="category" id="id_category" onchange="this.form.submit()" class="form-input">
+                <option value="">All categories</option>
+                {% for cat in categories %}
+                <option value="{{ cat.pk }}" {% if category_id == cat.pk|stringformat:"s" %}selected{% endif %}>{{ cat.category_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label class="form-label" for="id_status">Status</label>
+            <select name="status" id="id_status" onchange="this.form.submit()" class="form-input">
+                <option value="">All statuses</option>
+                {% for value, label in status_choices %}
+                <option value="{{ value }}" {% if status == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label class="form-label" for="id_stock_level">Stock level</label>
+            <select name="stock_level" id="id_stock_level" onchange="this.form.submit()" class="form-input">
+                <option value="">Any stock level</option>
+                <option value="in" {% if stock_level == "in" %}selected{% endif %}>In stock</option>
+                <option value="low" {% if stock_level == "low" %}selected{% endif %}>Low stock</option>
+                <option value="out" {% if stock_level == "out" %}selected{% endif %}>Out of stock</option>
+            </select>
+        </div>
+    </div>
+    <div class="mt-4 flex flex-wrap items-end gap-4">
+        <div>
+            <label class="form-label">Price range (RWF)</label>
+            <div class="flex items-center gap-2">
+                <input type="number" name="min_price" data-autosubmit value="{{ min_price }}" placeholder="Min" min="0" class="form-input w-32">
+                <span class="text-slate-400">&ndash;</span>
+                <input type="number" name="max_price" data-autosubmit value="{{ max_price }}" placeholder="Max" min="0" class="form-input w-32">
+            </div>
+        </div>
+        <noscript><button type="submit" class="btn-primary">Apply filters</button></noscript>
+        <a href="{% url 'products:manage_list' %}" class="btn-outline">Reset filters</a>
+    </div>
+</form>
+
+<div class="card overflow-x-auto p-0">
+    <table class="table-base">
+        <thead class="bg-slate-50">
+            <tr><th>Product</th><th>SKU</th><th>Category</th><th>Price</th><th>Stock</th><th>Status</th><th class="text-right">Actions</th></tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+            {% for product in page_obj %}
+            {% url 'products:detail' product.pk as product_view_url %}
+            {% url 'products:update' product.pk as product_edit_url %}
+            {% url 'products:delete' product.pk as product_delete_url %}
+            <tr class="table-row-hover">
+                <td class="flex items-center gap-3 font-medium text-slate-900 dark:text-white">
+                    {% if product.image %}<img src="{{ product.image.url }}" class="h-8 w-8 rounded-lg object-cover" alt="">
+                    {% else %}<span class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-xs text-slate-400 dark:bg-slate-700">—</span>{% endif %}
+                    {{ product.product_name }}
+                </td>
+                <td>{{ product.sku }}</td>
+                <td>{{ product.category.category_name|default:"—" }}</td>
+                <td>
+                    {{ product.display_price|floatformat:0|intcomma }} RWF
+                    {% if product.discount_price %}<span class="text-xs text-slate-400 line-through">{{ product.price|floatformat:0|intcomma }} RWF</span>{% endif %}
+                </td>
+                <td>
+                    {{ product.stock_quantity }}
+                    {% if product.is_out_of_stock %}<span class="badge bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300">Out of stock</span>
+                    {% elif product.is_low_stock %}<span class="badge bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">Low stock</span>{% endif %}
+                </td>
+                <td>
+                    {% if product.status == "Active" %}<span class="badge-green">Active</span>
+                    {% else %}<span class="badge bg-slate-100 text-slate-600">{{ product.status }}</span>{% endif %}
+                </td>
+                <td>
+                    {% include "_row_actions.html" with view_url=product_view_url edit_url=product_edit_url delete_url=product_delete_url view_title=product.product_name edit_title="Edit "|add:product.product_name delete_title="Delete product" delete_message="This removes the product from your store. Past orders that include it are kept. This cannot be undone." %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="7" class="py-8 text-center text-slate-400">No products yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% include "pagination.html" with page_obj=page_obj base_query=base_query %}
+{% endblock %}
+{% block extra_js %}
+<script>
+document.querySelectorAll('#filter-form [data-autosubmit]').forEach((input) => {
+    let timer;
+    input.addEventListener('input', () => {
+        clearTimeout(timer);
+        timer = setTimeout(() => input.form.requestSubmit(), 600);
+    });
+});
+</script>
+{% endblock %}

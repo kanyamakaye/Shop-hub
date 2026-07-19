@@ -1,0 +1,18 @@
+{% if total %}
+<div class="space-y-3">
+    {% for row in rows %}
+    {% cycle "bg-slate-400" "bg-brand-blue-500" "bg-brand-orange-500" "bg-brand-green-500" "bg-amber-500" "bg-purple-500" "bg-red-500" as bar_color silent %}
+    <div>
+        <div class="mb-1 flex items-center justify-between text-sm">
+            <span class="font-medium text-slate-700 dark:text-slate-200">{{ row.label }}</span>
+            <span class="text-slate-400">{{ row.count }} &middot; {{ row.percent }}%</span>
+        </div>
+        <div class="h-2 rounded-full bg-slate-100 dark:bg-slate-700">
+            <div class="h-2 rounded-full {{ bar_color }}" style="width: {{ row.percent }}%"></div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<p class="py-8 text-center text-sm text-slate-400">{{ empty_text|default:"No data yet." }}</p>
+{% endif %}

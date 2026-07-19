@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block title %}Pricing{% endblock %}
+{% block content %}
+<div class="mb-8 text-center">
+    <h1 class="text-3xl font-bold text-slate-900 dark:text-white">Subscription Plans</h1>
+    <p class="mt-2 text-slate-600 dark:text-slate-400">Pick the plan that fits your store. All prices in RWF.</p>
+</div>
+
+{% if is_owner %}
+<div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+    <form method="get" class="max-w-sm flex-1">
+        <input type="text" name="q" value="{{ query }}" placeholder="Search plans..." class="form-input">
+    </form>
+    <a href="{% url 'subscriptions:create' %}" class="btn-primary">+ New plan</a>
+</div>
+{% endif %}
+
+<div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+    {% for plan in page_obj %}
+    <div class="card flex flex-col border-t-4 border-t-brand-blue-500 {% if forloop.counter == 2 and not is_owner %}border-2 border-brand-blue-500{% endif %}">
+        {% if forloop.counter == 2 and not is_owner %}<span class="badge-blue mb-3 self-start">Most popular</span>{% endif %}
+        <h2 class="text-xl font-bold text-slate-900 dark:text-white">{{ plan.plan_name }}</h2>
+        <p class="mt-2 text-3xl font-extrabold text-brand-blue-700 dark:text-brand-blue-300">{{ plan.monthly_price|floatformat:0|intcomma }}<span class="text-base font-medium text-slate-400"> RWF/mo</span></p>
+        <p class="text-sm text-slate-500 dark:text-slate-400">or {{ plan.yearly_price|floatformat:0|intcomma }} RWF/year (~8% off)</p>
+        <ul class="my-4 flex-1 space-y-2 text-sm text-slate-700 dark:text-slate-300">
+            <li>✓ {{ plan.max_products_display }} products &middot; {{ plan.max_users_display }} users</li>
+            {% for feature in plan.features %}
+            <li>✓ {{ feature }}</li>
+            {% endfor %}
+        </ul>
+        {% if is_owner %}
+        {% url 'subscriptions:update' plan.pk as plan_edit_url %}
+        {% url 'subscriptions:delete' plan.pk as plan_delete_url %}
+        <span class="badge-green mb-3 self-start">{{ plan.status }}</span>
+        <div class="flex gap-3">
+            <a href="{{ plan_edit_url }}" data-modal-edit="{{ plan_edit_url }}" data-modal-title="Edit {{ plan.plan_name }}" class="btn-outline flex-1 justify-center">Edit</a>
+            <a href="{{ plan_delete_url }}" data-modal-delete="{{ plan_delete_url }}" data-modal-title="Delete plan" data-modal-message="Tenants already on the {{ plan.plan_name }} plan keep their subscription, but it can no longer be assigned to new organizations. This cannot be undone." class="icon-btn icon-btn-danger" title="Delete">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4">
+                    <path d="M3 6h18" />
+                    <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6" />
+                </svg>
+            </a>
+        </div>
+        {% else %}
+        <a href="{% url 'accounts:register' %}" class="btn-secondary justify-center">Get started</a>
+        {% endif %}
+    </div>
+    {% empty %}
+    <p class="col-span-full py-12 text-center text-slate-400">No plans available.</p>
+    {% endfor %}
+</div>
+
+{% include "pagination.html" with page_obj=page_obj %}
+{% endblock %}

@@ -1,0 +1,17 @@
+{% load humanize %}
+<div class="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-xl bg-gradient-to-r from-brand-blue-700 to-brand-blue-600 px-6 py-5 text-white shadow-sm">
+    <div class="flex items-center gap-4">
+        <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-white/15 text-white">{% include "_icon.html" with name=icon size="h-6 w-6" %}</span>
+        <div>
+            <h1 class="text-lg font-bold">{{ title }}</h1>
+            <p class="text-sm text-brand-blue-100">{{ subtitle }} &middot; updated {% now "d M Y" %}</p>
+        </div>
+    </div>
+    <button type="button" onclick="window.location.reload()" class="inline-flex items-center gap-2 rounded-lg bg-white/15 px-3 py-2 text-sm font-medium transition hover:bg-white/25">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4">
+            <path d="M21 12a9 9 0 1 1-2.64-6.36" />
+            <path d="M21 3v6h-6" />
+        </svg>
+        Refresh
+    </button>
+</div>

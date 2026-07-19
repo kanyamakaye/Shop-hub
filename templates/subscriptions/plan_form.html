@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}{% if plan %}Edit plan{% else %}New plan{% endif %}{% endblock %}
+{% block content %}
+{% if plan %}
+<div class="mx-auto max-w-xl">
+    {% if not is_modal %}
+    <div class="mb-6 flex items-center gap-3">
+        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-blue-100 text-xl dark:bg-brand-blue-900/40">💳</span>
+        <h1 class="text-2xl font-bold text-slate-900 dark:text-white">Edit plan</h1>
+    </div>
+    {% endif %}
+{% else %}
+{% include "_form_header.html" with icon="💳" title="New Subscription Plan" subtitle="Add a pricing tier organizations can subscribe to." %}
+<div class="mx-auto max-w-xl">
+{% endif %}
+    <div class="card">
+        <form method="post" novalidate class="space-y-4">
+            {% csrf_token %}
+            <div>
+                <label class="form-label" for="{{ form.plan_name.id_for_label }}">Plan name <span class="form-required">*</span></label>
+                {{ form.plan_name }}
+                {% if form.plan_name.errors %}<p class="mt-1 text-xs text-red-600">{{ form.plan_name.errors|join:', ' }}</p>{% endif %}
+            </div>
+            <div class="grid gap-4 sm:grid-cols-2">
+                <div>
+                    <label class="form-label" for="{{ form.monthly_price.id_for_label }}">Monthly price <span class="form-required">*</span></label>
+                    {{ form.monthly_price }}
+                </div>
+                <div>
+                    <label class="form-label" for="{{ form.yearly_price.id_for_label }}">Yearly price <span class="form-required">*</span></label>
+                    {{ form.yearly_price }}
+                </div>
+            </div>
+            <div class="grid gap-4 sm:grid-cols-2">
+                <div>
+                    <label class="form-label" for="{{ form.max_products.id_for_label }}">Max products <span class="text-slate-400">(-1 = unlimited)</span></label>
+                    {{ form.max_products }}
+                </div>
+                <div>
+                    <label class="form-label" for="{{ form.max_users.id_for_label }}">Max users <span class="text-slate-400">(-1 = unlimited)</span></label>
+                    {{ form.max_users }}
+                </div>
+            </div>
+            <div>
+                <label class="form-label" for="{{ form.status.id_for_label }}">Status</label>
+                {{ form.status }}
+            </div>
+            <div class="form-actions">
+                <a href="{% url 'subscriptions:list' %}" class="btn-outline">Cancel</a>
+                <button type="submit" class="btn-primary">{% if plan %}Save changes{% else %}Create plan{% endif %}</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

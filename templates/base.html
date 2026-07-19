@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en" class="bg-slate-50 dark:bg-slate-900">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}ShopHub{% endblock %} | ShopHub</title>
+    <meta name="description" content="{% block meta_description %}ShopHub is a multi-tenant SaaS e-commerce platform: launch your own online store with subscription plans, inventory, orders and analytics.{% endblock %}">
+    <meta property="og:title" content="{% block og_title %}ShopHub{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}Create and manage your online store on ShopHub's secure, multi-tenant e-commerce platform.{% endblock %}">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary">
+    <link rel="icon" type="image/png" href="{% static 'images/logo/favicon.png' %}">
+    <link rel="shortcut icon" type="image/x-icon" href="{% static 'images/logo/favicon.ico' %}">
+    <link rel="stylesheet" href="{% static 'css/tailwind.css' %}">
+    <script>
+        if (localStorage.getItem('theme') === 'dark' ||
+            (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        }
+    </script>
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="flex min-h-screen flex-col bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-slate-100">
+    {% include "navbar.html" %}
+
+    {% if messages %}
+    <div id="toast-stack" class="pointer-events-none fixed inset-x-0 top-4 z-[60] flex flex-col items-center gap-2 px-4 sm:left-auto sm:right-4 sm:items-end sm:px-0">
+        {% for message in messages %}
+        <div class="js-toast toast-enter pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-lg border px-4 py-3 text-sm shadow-lg
+            {% if message.tags == 'error' %} border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-300
+            {% elif message.tags == 'success' %} border-brand-green-200 bg-brand-green-50 text-brand-green-800 dark:border-brand-green-800 dark:bg-brand-green-950 dark:text-brand-green-300
+            {% elif message.tags == 'warning' %} border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300
+            {% else %} border-brand-blue-200 bg-brand-blue-50 text-brand-blue-800 dark:border-brand-blue-800 dark:bg-brand-blue-950 dark:text-brand-blue-300 {% endif %}">
+            <span class="flex-1">{{ message }}</span>
+            <button type="button" data-toast-close class="shrink-0 opacity-60 transition hover:opacity-100" aria-label="Dismiss">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4">
+                    <path d="M18 6 6 18" />
+                    <path d="m6 6 12 12" />
+                </svg>
+            </button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="mx-auto flex w-full max-w-7xl flex-1 gap-6 px-4 py-6 sm:px-6 lg:px-8">
+        {% if show_sidebar and user.is_authenticated %}
+        <div class="hidden shrink-0 md:block">
+            {% include "sidebar.html" %}
+        </div>
+        {% endif %}
+        <main id="main-content" class="min-w-0 flex-1">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    {% if not hide_footer and not show_sidebar %}{% include "footer.html" %}{% endif %}
+
+    {% include "_modal.html" %}
+
+    <script src="{% static 'js/app.js' %}"></script>
+    <script src="{% static 'js/modal.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,33 @@
+{% extends "base_auth.html" %}
+{% block title %}Login{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-md">
+    <div class="card">
+        <h1 class="mb-1 text-2xl font-bold text-slate-900 dark:text-white">Welcome back</h1>
+        <p class="mb-6 text-sm text-slate-500">Log in to your ShopHub account.</p>
+        <form method="post" novalidate class="space-y-4">
+            {% csrf_token %}
+            {% if form.non_field_errors %}
+            <div class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                {{ form.non_field_errors }}
+            </div>
+            {% endif %}
+            <div>
+                <label class="form-label" for="{{ form.username.id_for_label }}">{{ form.username.label }}</label>
+                {{ form.username }}
+                {% if form.username.errors %}<p class="mt-1 text-xs text-red-600">{{ form.username.errors|join:', ' }}</p>{% endif %}
+            </div>
+            <div>
+                <label class="form-label" for="{{ form.password.id_for_label }}">{{ form.password.label }}</label>
+                {{ form.password }}
+                {% if form.password.errors %}<p class="mt-1 text-xs text-red-600">{{ form.password.errors|join:', ' }}</p>{% endif %}
+            </div>
+            <div class="flex items-center justify-between text-sm">
+                <a href="{% url 'accounts:forgot_password' %}" class="text-brand-blue-600 hover:underline">Forgot password?</a>
+                <a href="{% url 'accounts:register' %}" class="text-brand-blue-600 hover:underline">Create an account</a>
+            </div>
+            <button type="submit" class="btn-primary w-full">Log in</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

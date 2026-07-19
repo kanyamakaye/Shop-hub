@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Write a review{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-lg">
+    <div class="card">
+        <div class="mb-1 flex items-center gap-3">
+            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-blue-100 text-lg dark:bg-brand-blue-900/40">★</span>
+            <h1 class="text-2xl font-bold text-slate-900 dark:text-white">{{ product.product_name }}</h1>
+        </div>
+        <p class="mb-6 text-sm text-slate-500">Share your experience with this product.</p>
+        <form method="post" novalidate class="space-y-4">
+            {% csrf_token %}
+            <div>
+                <label class="form-label">Rating <span class="form-required">*</span></label>
+                <div id="star-rating" class="flex gap-1 text-3xl text-slate-300">
+                    {% for i in "12345" %}
+                    <button type="button" class="star" data-value="{{ forloop.counter }}">★</button>
+                    {% endfor %}
+                </div>
+                {{ form.rating }}
+                {% if form.rating.errors %}<p class="mt-1 text-xs text-red-600">{{ form.rating.errors|join:', ' }}</p>{% endif %}
+            </div>
+            <div>
+                <label class="form-label" for="{{ form.comment.id_for_label }}">Comment <span class="form-required">*</span></label>
+                {{ form.comment }}
+                {% if form.comment.errors %}<p class="mt-1 text-xs text-red-600">{{ form.comment.errors|join:', ' }}</p>{% endif %}
+            </div>
+            <div class="form-actions">
+                <a href="{% url 'products:detail' product.pk %}" class="btn-outline">Cancel</a>
+                <button type="submit" class="btn-primary">Submit review</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const stars = document.querySelectorAll('#star-rating .star');
+    const input = document.getElementById('{{ form.rating.id_for_label }}');
+    function paint(value) {
+        stars.forEach((star) => {
+            star.classList.toggle('text-amber-400', parseInt(star.dataset.value, 10) <= value);
+            star.classList.toggle('text-slate-300', parseInt(star.dataset.value, 10) > value);
+        });
+    }
+    paint(parseInt(input.value, 10) || 0);
+    stars.forEach((star) => {
+        star.addEventListener('click', () => {
+            input.value = star.dataset.value;
+            paint(parseInt(star.dataset.value, 10));
+        });
+        star.addEventListener('mouseenter', () => paint(parseInt(star.dataset.value, 10)));
+        star.addEventListener('mouseleave', () => paint(parseInt(input.value, 10) || 0));
+    });
+});
+</script>
+{% endblock %}

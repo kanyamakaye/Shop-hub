@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}{% if coupon %}Edit coupon{% else %}New coupon{% endif %}{% endblock %}
+{% block content %}
+{% if coupon %}
+<div class="mx-auto max-w-xl">
+    {% if not is_modal %}
+    <div class="mb-6 flex items-center gap-3">
+        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-blue-100 text-xl dark:bg-brand-blue-900/40">🏷️</span>
+        <h1 class="text-2xl font-bold text-slate-900 dark:text-white">Edit coupon</h1>
+    </div>
+    {% endif %}
+{% else %}
+{% include "_form_header.html" with icon="🏷️" title="New Coupon" subtitle="Create a discount code your customers can apply at checkout." %}
+<div class="mx-auto max-w-xl">
+{% endif %}
+    <div class="card">
+        <form method="post" novalidate class="space-y-4">
+            {% csrf_token %}
+            <div>
+                <label class="form-label" for="{{ form.code.id_for_label }}">Code <span class="form-required">*</span></label>
+                {{ form.code }}
+                {% if form.code.errors %}<p class="mt-1 text-xs text-red-600">{{ form.code.errors|join:', ' }}</p>{% endif %}
+                <p class="mt-1 text-xs text-slate-400">Customers type this in at checkout — always saved in CAPS.</p>
+            </div>
+            <div class="grid gap-4 sm:grid-cols-2">
+                <div>
+                    <label class="form-label" for="{{ form.discount_type.id_for_label }}">Discount type <span class="form-required">*</span></label>
+                    {{ form.discount_type }}
+                </div>
+                <div>
+                    <label class="form-label" for="{{ form.discount_value.id_for_label }}">Discount value <span class="form-required">*</span></label>
+                    {{ form.discount_value }}
+                    {% if form.discount_value.errors %}<p class="mt-1 text-xs text-red-600">{{ form.discount_value.errors|join:', ' }}</p>{% endif %}
+                </div>
+            </div>
+            <div class="grid gap-4 sm:grid-cols-2">
+                <div>
+                    <label class="form-label" for="{{ form.min_order_amount.id_for_label }}">Minimum order <span class="text-slate-400">(RWF, optional)</span></label>
+                    {{ form.min_order_amount }}
+                </div>
+                <div>
+                    <label class="form-label" for="{{ form.max_uses.id_for_label }}">Max uses <span class="text-slate-400">(optional)</span></label>
+                    {{ form.max_uses }}
+                </div>
+            </div>
+            <div class="grid gap-4 sm:grid-cols-2">
+                <div>
+                    <label class="form-label" for="{{ form.valid_from.id_for_label }}">Valid from <span class="text-slate-400">(optional)</span></label>
+                    {{ form.valid_from }}
+                </div>
+                <div>
+                    <label class="form-label" for="{{ form.valid_until.id_for_label }}">Valid until <span class="text-slate-400">(optional)</span></label>
+                    {{ form.valid_until }}
+                </div>
+            </div>
+            <div>
+                <label class="form-label" for="{{ form.status.id_for_label }}">Status</label>
+                {{ form.status }}
+            </div>
+            <div class="form-actions">
+                <a href="{% url 'coupons:list' %}" class="btn-outline">Cancel</a>
+                <button type="submit" class="btn-primary">{% if coupon %}Save changes{% else %}Create coupon{% endif %}</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

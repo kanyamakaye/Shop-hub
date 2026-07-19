@@ -1,0 +1,6 @@
+{% comment %}Centered icon + title + subtitle header for "create new X" style forms. Params: icon, title, subtitle.{% endcomment %}
+<div class="mx-auto mb-6 max-w-2xl text-center">
+    <div class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-brand-blue-100 text-2xl dark:bg-brand-blue-900/40">{{ icon }}</div>
+    <h1 class="text-xl font-bold text-slate-900 dark:text-white">{{ title }}</h1>
+    {% if subtitle %}<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ subtitle }}</p>{% endif %}
+</div>

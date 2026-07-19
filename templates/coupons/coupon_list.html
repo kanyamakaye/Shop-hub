@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block title %}Coupons{% endblock %}
+{% block content %}
+<div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+    <h1 class="text-2xl font-bold text-slate-900 dark:text-white">Coupons</h1>
+    <a href="{% url 'coupons:create' %}" class="btn-primary">+ New coupon</a>
+</div>
+
+<form method="get" id="filter-form" class="card mb-6">
+    <div class="grid gap-4 sm:grid-cols-3">
+        <div>
+            <label class="form-label" for="id_q">Search</label>
+            <input type="text" name="q" id="id_q" data-autosubmit value="{{ query }}" placeholder="Coupon code..." class="form-input">
+        </div>
+        <div>
+            <label class="form-label" for="id_discount_type">Discount type</label>
+            <select name="discount_type" id="id_discount_type" onchange="this.form.submit()" class="form-input">
+                <option value="">All types</option>
+                {% for value, label in discount_type_choices %}
+                <option value="{{ value }}" {% if discount_type == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label class="form-label" for="id_status">Status</label>
+            <select name="status" id="id_status" onchange="this.form.submit()" class="form-input">
+                <option value="">All statuses</option>
+                {% for value, label in status_choices %}
+                <option value="{{ value }}" {% if status == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+    <div class="mt-4 flex justify-end">
+        <noscript><button type="submit" class="btn-primary">Apply filters</button></noscript>
+        <a href="{% url 'coupons:list' %}" class="btn-outline">Reset filters</a>
+    </div>
+</form>
+
+<div class="card overflow-x-auto p-0">
+    <table class="table-base">
+        <thead class="bg-slate-50">
+            <tr>
+                <th>Code</th>
+                <th>Discount</th>
+                <th>Min. order</th>
+                <th>Uses</th>
+                <th>Valid</th>
+                <th>Status</th>
+                <th class="text-right">Actions</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+            {% for coupon in page_obj %}
+            {% url 'coupons:update' coupon.pk as coupon_edit_url %}
+            {% url 'coupons:delete' coupon.pk as coupon_delete_url %}
+            <tr class="table-row-hover">
+                <td class="font-mono font-medium text-slate-900 dark:text-white">{{ coupon.code }}</td>
+                <td>
+                    {% if coupon.discount_type == "Percentage" %}{{ coupon.discount_value|floatformat:0 }}%
+                    {% else %}{{ coupon.discount_value|floatformat:0|intcomma }} RWF{% endif %}
+                </td>
+                <td>{{ coupon.min_order_amount|floatformat:0|intcomma }} RWF</td>
+                <td>{{ coupon.used_count }}{% if coupon.max_uses %} / {{ coupon.max_uses }}{% else %} / &infin;{% endif %}</td>
+                <td class="text-xs text-slate-500">
+                    {% if coupon.valid_from or coupon.valid_until %}
+                        {{ coupon.valid_from|date:"M d, Y"|default:"—" }} &ndash; {{ coupon.valid_until|date:"M d, Y"|default:"—" }}
+                    {% else %}No expiry{% endif %}
+                </td>
+                <td>
+                    {% if coupon.status == "Active" %}<span class="badge-green">Active</span>
+                    {% else %}<span class="badge bg-slate-100 text-slate-600">{{ coupon.status }}</span>{% endif %}
+                </td>
+                <td>
+                    {% include "_row_actions.html" with edit_url=coupon_edit_url delete_url=coupon_delete_url edit_title="Edit "|add:coupon.code delete_title="Delete coupon" delete_message="Customers will no longer be able to apply this code at checkout. This cannot be undone." %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="7" class="py-8 text-center text-slate-400">No coupons yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% include "pagination.html" with page_obj=page_obj base_query=base_query %}
+{% endblock %}
+{% block extra_js %}
+<script>
+document.querySelectorAll('#filter-form [data-autosubmit]').forEach((input) => {
+    let timer;
+    input.addEventListener('input', () => {
+        clearTimeout(timer);
+        timer = setTimeout(() => input.form.requestSubmit(), 600);
+    });
+});
+</script>
+{% endblock %}

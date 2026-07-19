@@ -1,0 +1,31 @@
+{% comment %}
+Consistent icon-button row actions for list tables, wired to the shared AJAX
+modal (static/js/modal.js). Pass any subset of: view_url, edit_url, delete_url,
+edit_title, delete_title, delete_message. Links still work with JS disabled —
+each href points at the real page/view.
+{% endcomment %}
+<div class="flex items-center justify-end gap-1">
+    {% if view_url %}
+    <a href="{{ view_url }}" data-modal-view="{{ view_url }}" data-modal-title="{{ view_title|default:'Details' }}" class="icon-btn" title="View" aria-label="View {{ view_title|default:'details' }}">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4">
+            <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
+            <circle cx="12" cy="12" r="3" />
+        </svg>
+    </a>
+    {% endif %}
+    {% if edit_url %}
+    <a href="{{ edit_url }}" data-modal-edit="{{ edit_url }}" data-modal-title="{{ edit_title|default:'Edit' }}" class="icon-btn" title="Edit" aria-label="{{ edit_title|default:'Edit' }}">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4">
+            <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+        </svg>
+    </a>
+    {% endif %}
+    {% if delete_url %}
+    <a href="{{ delete_url }}" data-modal-delete="{{ delete_url }}" data-modal-title="{{ delete_title|default:'Delete' }}" data-modal-message="{{ delete_message|default:'This action cannot be undone.' }}" class="icon-btn icon-btn-danger" title="Delete" aria-label="{{ delete_title|default:'Delete' }}">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4">
+            <path d="M3 6h18" />
+            <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6" />
+        </svg>
+    </a>
+    {% endif %}
+</div>

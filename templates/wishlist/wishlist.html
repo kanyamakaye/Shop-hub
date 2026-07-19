@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block title %}Wishlist{% endblock %}
+{% block content %}
+<h1 class="mb-6 text-2xl font-bold text-slate-900 dark:text-white">My wishlist</h1>
+
+{% if items %}
+<div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+    {% for item in items %}
+    <div class="card flex flex-col p-0">
+        <a href="{% url 'products:detail' item.product.pk %}" class="aspect-square overflow-hidden rounded-t-xl bg-slate-100">
+            {% if item.product.image %}<img src="{{ item.product.image.url }}" class="h-full w-full object-cover" alt="">{% endif %}
+        </a>
+        <div class="flex flex-1 flex-col p-4">
+            <p class="text-xs font-medium uppercase text-brand-green-600">{{ item.product.tenant.business_name }}</p>
+            <a href="{% url 'products:detail' item.product.pk %}" class="mt-1 flex-1 font-semibold text-slate-900 dark:text-white hover:text-brand-blue-700">{{ item.product.product_name }}</a>
+            <p class="mt-2 text-lg font-bold text-brand-blue-700">{{ item.product.display_price|floatformat:0|intcomma }} RWF</p>
+            <button type="button" data-modal-delete="{% url 'wishlist:remove' item.pk %}" data-modal-title="Remove from wishlist" data-modal-message="Remove {{ item.product.product_name }} from your wishlist?" class="btn-outline mt-3 w-full">Remove</button>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="card py-16 text-center">
+    <p class="text-slate-400">Your wishlist is empty.</p>
+    <a href="{% url 'products:list' %}" class="btn-primary mt-4 inline-flex">Browse products</a>
+</div>
+{% endif %}
+{% endblock %}

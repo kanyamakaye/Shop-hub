@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% load static humanize %}
+{% block title %}Checkout{% endblock %}
+{% block content %}
+<h1 class="mb-6 text-2xl font-bold text-slate-900 dark:text-white">Checkout</h1>
+<div class="grid gap-8 lg:grid-cols-3">
+    <form method="post" id="checkout-form" class="space-y-6 lg:col-span-2">
+        {% csrf_token %}
+        <div class="card">
+            {% include "_form_section.html" with icon="📍" title="Shipping address" %}
+            <label class="form-label" for="{{ form.shipping_address.id_for_label }}">Address <span class="form-required">*</span></label>
+            {{ form.shipping_address }}
+            {% if form.shipping_address.errors %}<p class="mt-1 text-xs text-red-600">{{ form.shipping_address.errors|join:', ' }}</p>{% endif %}
+        </div>
+
+        <div class="card">
+            {% include "_form_section.html" with icon="🏷️" title="Coupon code" %}
+            <label class="form-label" for="{{ form.coupon_code.id_for_label }}">Code <span class="text-slate-400">(optional)</span></label>
+            {{ form.coupon_code }}
+            <p class="mt-1 text-xs text-slate-400">Applies to whichever store in your cart the code belongs to.</p>
+        </div>
+
+        <div class="card">
+            {% include "_form_section.html" with icon="💳" title="Payment method" %}
+            <div class="space-y-2" id="payment-method-group">
+                {% for radio in form.payment_method %}
+                <label class="flex cursor-pointer items-center gap-3 rounded-lg border border-slate-200 p-3 has-[:checked]:border-brand-blue-500 has-[:checked]:bg-brand-blue-50">
+                    {{ radio.tag }}
+                    <span>{{ radio.choice_label }}</span>
+                </label>
+                {% endfor %}
+            </div>
+            {% if form.payment_method.errors %}<p id="payment-error" class="mt-2 text-xs text-red-600">{{ form.payment_method.errors|join:', ' }}</p>
+            {% else %}<p id="payment-error" class="mt-2 hidden text-xs text-red-600">Please select a payment method.</p>{% endif %}
+        </div>
+
+        <button type="submit" class="btn-primary w-full">Place order</button>
+    </form>
+
+    <div class="space-y-4">
+        {% for group in store_groups %}
+        <div class="card">
+            <h2 class="mb-3 text-sm font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ group.tenant.business_name }}</h2>
+            <ul class="mb-3 space-y-2 text-sm">
+                {% for item in group.items %}
+                <li class="flex justify-between">
+                    <span class="text-slate-600 dark:text-slate-300">{{ item.product.product_name }} &times; {{ item.quantity }}</span>
+                    <span class="font-medium">{{ item.subtotal|floatformat:0|intcomma }} RWF</span>
+                </li>
+                {% endfor %}
+            </ul>
+            <div class="space-y-1 border-t border-slate-100 pt-3 text-sm dark:border-slate-700">
+                <div class="flex justify-between text-slate-500"><span>Subtotal</span><span>{{ group.subtotal|floatformat:0|intcomma }} RWF</span></div>
+                {% if group.tax %}<div class="flex justify-between text-slate-500"><span>Tax</span><span>{{ group.tax|floatformat:0|intcomma }} RWF</span></div>{% endif %}
+                {% if group.shipping %}<div class="flex justify-between text-slate-500"><span>Shipping</span><span>{{ group.shipping|floatformat:0|intcomma }} RWF</span></div>{% endif %}
+                <div class="flex justify-between border-t border-slate-100 pt-1 font-bold text-slate-900 dark:border-slate-700 dark:text-white"><span>Estimated total</span><span>{{ group.estimated_total|floatformat:0|intcomma }} RWF</span></div>
+            </div>
+        </div>
+        {% endfor %}
+        <div class="card bg-slate-50 dark:bg-slate-900">
+            <div class="flex justify-between text-base font-bold text-slate-900 dark:text-white">
+                <span>Grand total (before coupon)</span>
+                <span>{{ grand_total_estimate|floatformat:0|intcomma }} RWF</span>
+            </div>
+            <p class="mt-1 text-xs text-slate-400">A valid coupon code will reduce this at checkout.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+document.getElementById('checkout-form').addEventListener('submit', (event) => {
+    const selected = document.querySelector('#payment-method-group input[type=radio]:checked');
+    const error = document.getElementById('payment-error');
+    if (!selected) {
+        error.classList.remove('hidden');
+        event.preventDefault();
+    } else {
+        error.classList.add('hidden');
+    }
+});
+</script>
+{% endblock %}

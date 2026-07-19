@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}My profile{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-2xl">
+    <div class="card">
+        <div class="mb-6 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-blue-100 text-xl dark:bg-brand-blue-900/40">👤</span>
+                <h1 class="text-2xl font-bold text-slate-900 dark:text-white">My profile</h1>
+            </div>
+            <a href="{% url 'accounts:change_password' %}" class="btn-outline">Change password</a>
+        </div>
+        <form method="post" novalidate class="space-y-4">
+            {% csrf_token %}
+            {% include "_form_section.html" with icon="🪪" title="Personal details" %}
+            <div class="grid gap-4 sm:grid-cols-2">
+                <div>
+                    <label class="form-label" for="{{ form.first_name.id_for_label }}">First name</label>
+                    {{ form.first_name }}
+                    {% if form.first_name.errors %}<p class="mt-1 text-xs text-red-600">{{ form.first_name.errors|join:', ' }}</p>{% endif %}
+                </div>
+                <div>
+                    <label class="form-label" for="{{ form.last_name.id_for_label }}">Last name</label>
+                    {{ form.last_name }}
+                </div>
+            </div>
+            <div class="grid gap-4 sm:grid-cols-2">
+                <div>
+                    <label class="form-label" for="{{ form.email.id_for_label }}">Email</label>
+                    {{ form.email }}
+                    {% if form.email.errors %}<p class="mt-1 text-xs text-red-600">{{ form.email.errors|join:', ' }}</p>{% endif %}
+                </div>
+                <div>
+                    <label class="form-label" for="{{ form.phone.id_for_label }}">Phone <span class="text-slate-400">(optional)</span></label>
+                    {{ form.phone }}
+                </div>
+            </div>
+            <div>
+                {% include "_form_section.html" with icon="📍" title="Location details" %}
+                <div class="grid gap-4 sm:grid-cols-2">
+                    {% for field in form %}
+                        {% if field.name in "province,district,sector,cell,village,postal_address" %}
+                        <div>
+                            <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }} <span class="form-required">*</span></label>
+                            {{ field }}
+                            {% if field.errors %}<p class="mt-1 text-xs text-red-600">{{ field.errors|join:', ' }}</p>{% endif %}
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="form-actions">
+                <span></span>
+                <button type="submit" class="btn-primary">Save changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script src="{% static 'js/location-cascade.js' %}"></script>
+{% endblock %}

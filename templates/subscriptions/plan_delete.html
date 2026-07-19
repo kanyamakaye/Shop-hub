@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Delete plan{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-md">
+    <div class="card">
+        <h1 class="mb-2 text-xl font-bold text-slate-900 dark:text-white">Delete plan</h1>
+        <p class="mb-6 text-sm text-slate-500">Are you sure you want to delete <strong>{{ plan.plan_name }}</strong>? This cannot be undone.</p>
+        <form method="post" data-confirm="Delete this subscription plan permanently?" class="flex gap-3">
+            {% csrf_token %}
+            <button type="submit" class="btn-primary bg-red-600 hover:bg-red-700 focus:ring-red-500">Delete</button>
+            <a href="{% url 'subscriptions:list' %}" class="btn-outline">Cancel</a>
+        </form>
+    </div>
+</div>
+{% endblock %}
