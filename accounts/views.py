@@ -18,6 +18,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 
 from config.csv_utils import csv_response
+from products.models import Product
 from tenants.models import Tenant
 
 from .decorators import role_required
@@ -70,7 +71,10 @@ def login_view(request):
         user = form.get_user()
         welcome_message = f'Welcome back, {user.first_name or user.username}!'
         return _begin_session_or_challenge(request, user, user.backend, welcome_message)
-    return render(request, 'accounts/login.html', {'form': form})
+    showcase_products = Product.objects.filter(
+        status=Product.Status.ACTIVE, image__isnull=False,
+    ).exclude(image='').order_by('-created_at')[:4]
+    return render(request, 'accounts/login.html', {'form': form, 'showcase_products': showcase_products})
 
 
 @require_http_methods(['GET', 'POST'])
