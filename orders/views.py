@@ -1,5 +1,3 @@
-import itertools
-
 from django.conf import settings
 from django.contrib import messages
 from django.core.mail import send_mail
@@ -11,7 +9,9 @@ from django.shortcuts import get_object_or_404, redirect, render
 from accounts.decorators import role_required
 from accounts.models import User
 from cart.models import Cart
+from cart.utils import group_items_by_store
 from config.csv_utils import csv_response
+from config.query_utils import is_decimal_string
 from coupons.models import Coupon
 from notifications.models import Notification
 from notifications.services import notify
@@ -54,9 +54,9 @@ def order_list(request):
         orders = orders.filter(order_date__date__gte=date_from)
     if date_to:
         orders = orders.filter(order_date__date__lte=date_to)
-    if min_total.replace('.', '', 1).isdigit():
+    if is_decimal_string(min_total):
         orders = orders.filter(total_amount__gte=min_total)
-    if max_total.replace('.', '', 1).isdigit():
+    if is_decimal_string(max_total):
         orders = orders.filter(total_amount__lte=max_total)
 
     if request.GET.get('export') == 'csv':
@@ -160,6 +160,93 @@ def process_return(request, pk):
     return redirect('orders:detail', pk=order.pk)
 
 
+def _apply_coupon(tenant, subtotal, coupon_code):
+    """Try to redeem `coupon_code` against one store's subtotal.
+    Returns (coupon_or_None, discount_amount, problem_message_or_None)."""
+    if not coupon_code:
+        return None, 0, None
+    candidate = Coupon.objects.filter(tenant=tenant, code=coupon_code).first()
+    if candidate is None:
+        return None, 0, 'Coupon code not recognized for one or more stores in your cart.'
+    valid, reason = candidate.is_valid_for(subtotal)
+    if not valid:
+        return None, 0, reason
+    return candidate, candidate.compute_discount(subtotal), None
+
+
+def _create_order_for_group(group, user, coupon_code, payment_method, shipping_address):
+    """Creates one Order (+ its OrderItems) for a single store's cart items and
+    decrements stock. Returns (order, newly_low_or_out_of_stock_products, coupon_problem_or_None)."""
+    tenant = group['tenant']
+    subtotal = group['subtotal']
+    coupon, discount, coupon_note = _apply_coupon(tenant, subtotal, coupon_code)
+    tax = round(subtotal * tenant.tax_rate / 100, 2)
+    shipping = tenant.shipping_fee
+
+    order = Order.objects.create(
+        tenant=tenant,
+        user=user,
+        subtotal_amount=subtotal,
+        discount_amount=discount,
+        tax_amount=tax,
+        shipping_amount=shipping,
+        total_amount=subtotal - discount + tax + shipping,
+        coupon=coupon,
+        payment_method=payment_method,
+        payment_status=Order.PaymentStatus.PENDING,
+        order_status=Order.OrderStatus.PENDING,
+        shipping_address=shipping_address,
+    )
+    if coupon:
+        Coupon.objects.filter(pk=coupon.pk).update(used_count=F('used_count') + 1)
+
+    low_stock_products = []
+    for item in group['items']:
+        OrderItem.objects.create(
+            order=order, product=item.product,
+            quantity=item.quantity, unit_price=item.product.display_price,
+        )
+        Product.objects.filter(pk=item.product_id).update(stock_quantity=F('stock_quantity') - item.quantity)
+        item.product.refresh_from_db(fields=['stock_quantity'])
+        if item.product.is_low_stock or item.product.is_out_of_stock:
+            low_stock_products.append(item.product)
+
+    return order, low_stock_products, coupon_note
+
+
+def _notify_new_order(order, buyer, low_stock_products):
+    """Notifies the buyer, the store's admins, and flags any products that just ran low."""
+    tenant = order.tenant
+    notify(
+        buyer, 'Order placed',
+        f'Your order #{order.pk} for {order.total_amount:,.0f} RWF has been placed.',
+        Notification.NotificationType.ORDER, tenant=tenant,
+    )
+    _send_mail_silently(
+        f'Order confirmation — #{order.pk}',
+        f'Thanks for your order! #{order.pk} totalling {order.total_amount:,.0f} RWF has been placed with {tenant.business_name}.',
+        buyer.email,
+    )
+
+    admins = list(User.objects.filter(tenant_id=tenant.pk, role=User.Role.SYSTEM_ADMIN))
+    for admin in admins:
+        notify(
+            admin, 'New order',
+            f'Order #{order.pk} has been placed by {buyer.get_full_name() or buyer.username}.',
+            Notification.NotificationType.ORDER, tenant=tenant,
+        )
+        _send_mail_silently(f'New order — #{order.pk}', f'A new order #{order.pk} was placed.', admin.email)
+
+    for product in low_stock_products:
+        level = 'out of stock' if product.is_out_of_stock else f'only {product.stock_quantity} left'
+        for admin in admins:
+            notify(
+                admin, 'Low stock alert', f'{product.product_name} is {level}.',
+                Notification.NotificationType.GENERAL, tenant=tenant,
+            )
+            _send_mail_silently(f'Low stock — {product.product_name}', f'{product.product_name} is {level}.', admin.email)
+
+
 @role_required(User.Role.USER)
 def checkout(request):
     items = list(Cart.objects.filter(user=request.user).select_related('product', 'product__tenant'))
@@ -167,20 +254,7 @@ def checkout(request):
         messages.warning(request, 'Your cart is empty.')
         return redirect('cart:list')
 
-    store_groups = []
-    for tenant_id, group in itertools.groupby(
-        sorted(items, key=lambda i: i.product.tenant_id),
-        key=lambda i: i.product.tenant_id,
-    ):
-        group_items = list(group)
-        tenant = group_items[0].product.tenant
-        subtotal = sum((i.subtotal for i in group_items), 0)
-        tax = round(subtotal * tenant.tax_rate / 100, 2)
-        shipping = tenant.shipping_fee
-        store_groups.append({
-            'tenant': tenant, 'items': group_items, 'subtotal': subtotal,
-            'tax': tax, 'shipping': shipping, 'estimated_total': subtotal + tax + shipping,
-        })
+    store_groups = group_items_by_store(items)
     grand_total_estimate = sum((g['estimated_total'] for g in store_groups), 0)
 
     form = CheckoutForm(request.POST or None, initial={'shipping_address': request.user.postal_address})
@@ -191,84 +265,14 @@ def checkout(request):
         with transaction.atomic():
             created_orders = []
             for group in store_groups:
-                tenant = group['tenant']
-                group_items = group['items']
-                subtotal = group['subtotal']
-
-                discount = 0
-                coupon = None
-                if coupon_code:
-                    candidate = Coupon.objects.filter(tenant=tenant, code=coupon_code).first()
-                    if candidate:
-                        valid, reason = candidate.is_valid_for(subtotal)
-                        if valid:
-                            coupon = candidate
-                            discount = coupon.compute_discount(subtotal)
-                        else:
-                            coupon_note = reason
-                    else:
-                        coupon_note = 'Coupon code not recognized for one or more stores in your cart.'
-
-                tax = round(subtotal * tenant.tax_rate / 100, 2)
-                shipping = tenant.shipping_fee
-                order_total = subtotal - discount + tax + shipping
-
-                order = Order.objects.create(
-                    tenant=tenant,
-                    user=request.user,
-                    subtotal_amount=subtotal,
-                    discount_amount=discount,
-                    tax_amount=tax,
-                    shipping_amount=shipping,
-                    total_amount=order_total,
-                    coupon=coupon,
-                    payment_method=form.cleaned_data['payment_method'],
-                    payment_status=Order.PaymentStatus.PENDING,
-                    order_status=Order.OrderStatus.PENDING,
-                    shipping_address=form.cleaned_data['shipping_address'],
+                order, low_stock_products, group_coupon_note = _create_order_for_group(
+                    group, request.user, coupon_code,
+                    form.cleaned_data['payment_method'], form.cleaned_data['shipping_address'],
                 )
-                if coupon:
-                    Coupon.objects.filter(pk=coupon.pk).update(used_count=F('used_count') + 1)
-
-                low_stock_products = []
-                for item in group_items:
-                    OrderItem.objects.create(
-                        order=order, product=item.product,
-                        quantity=item.quantity, unit_price=item.product.display_price,
-                    )
-                    Product.objects.filter(pk=item.product_id).update(stock_quantity=F('stock_quantity') - item.quantity)
-                    item.product.refresh_from_db(fields=['stock_quantity'])
-                    if item.product.is_low_stock or item.product.is_out_of_stock:
-                        low_stock_products.append(item.product)
-
+                # A later group's success should never clear an earlier group's warning.
+                coupon_note = group_coupon_note or coupon_note
                 created_orders.append(order)
-                notify(
-                    request.user, 'Order placed',
-                    f'Your order #{order.pk} for {order.total_amount:,.0f} RWF has been placed.',
-                    Notification.NotificationType.ORDER, tenant=order.tenant,
-                )
-                _send_mail_silently(
-                    f'Order confirmation — #{order.pk}',
-                    f'Thanks for your order! #{order.pk} totalling {order.total_amount:,.0f} RWF has been placed with {tenant.business_name}.',
-                    request.user.email,
-                )
-                admins = list(User.objects.filter(tenant_id=tenant.pk, role=User.Role.SYSTEM_ADMIN))
-                for admin in admins:
-                    notify(
-                        admin, 'New order',
-                        f'Order #{order.pk} has been placed by {request.user.get_full_name() or request.user.username}.',
-                        Notification.NotificationType.ORDER, tenant=order.tenant,
-                    )
-                    _send_mail_silently(f'New order — #{order.pk}', f'A new order #{order.pk} was placed.', admin.email)
-                for product in low_stock_products:
-                    for admin in admins:
-                        level = 'out of stock' if product.is_out_of_stock else f'only {product.stock_quantity} left'
-                        notify(
-                            admin, 'Low stock alert',
-                            f'{product.product_name} is {level}.',
-                            Notification.NotificationType.GENERAL, tenant=tenant,
-                        )
-                        _send_mail_silently(f'Low stock — {product.product_name}', f'{product.product_name} is {level}.', admin.email)
+                _notify_new_order(order, request.user, low_stock_products)
 
             Cart.objects.filter(user=request.user).delete()
 

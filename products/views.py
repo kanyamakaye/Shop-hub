@@ -7,6 +7,7 @@ from accounts.decorators import role_required
 from accounts.models import User
 from categories.models import Category
 from config.csv_utils import csv_response
+from config.query_utils import is_decimal_string
 from tenants.models import Tenant
 
 from .forms import ProductForm
@@ -46,9 +47,9 @@ def product_list(request):
         products = products.filter(category__category_name=category_name)
     if tenant_id.isdigit():
         products = products.filter(tenant_id=tenant_id)
-    if min_price.replace('.', '', 1).isdigit():
+    if is_decimal_string(min_price):
         products = products.filter(price__gte=min_price)
-    if max_price.replace('.', '', 1).isdigit():
+    if is_decimal_string(max_price):
         products = products.filter(price__lte=max_price)
     if discount_only:
         products = products.filter(discount_price__isnull=False)
@@ -116,9 +117,9 @@ def product_manage_list(request):
         products = products.filter(stock_quantity__gt=0, stock_quantity__lte=F('low_stock_threshold'))
     elif stock_level == 'in':
         products = products.filter(stock_quantity__gt=F('low_stock_threshold'))
-    if min_price.replace('.', '', 1).isdigit():
+    if is_decimal_string(min_price):
         products = products.filter(price__gte=min_price)
-    if max_price.replace('.', '', 1).isdigit():
+    if is_decimal_string(max_price):
         products = products.filter(price__lte=max_price)
 
     if request.GET.get('export') == 'csv':

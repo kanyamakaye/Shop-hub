@@ -1,5 +1,7 @@
 from django import forms
-from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
+from django.contrib.auth.forms import (
+    AuthenticationForm, PasswordChangeForm, SetPasswordForm, UserCreationForm,
+)
 
 from tenants.models import Tenant
 from .models import User
@@ -8,6 +10,25 @@ INPUT_CLASS = 'form-input'
 
 CASCADE_FIELDS = ['province', 'district', 'sector', 'cell', 'village']
 LOCATION_FIELDS = [*CASCADE_FIELDS, 'postal_address']
+# Village is the finest-grained level and not everyone knows/has one on hand,
+# so it's the one cascade field that stays optional while the rest are required.
+OPTIONAL_LOCATION_FIELDS = {'village'}
+
+PASSWORD_HINT = (
+    'At least 8 characters. Avoid common passwords, all-numeric passwords, '
+    'or ones too similar to your username.'
+)
+
+
+def require_location_fields(form):
+    for name in LOCATION_FIELDS:
+        form.fields[name].required = name not in OPTIONAL_LOCATION_FIELDS
+
+
+def apply_password_strength(field, help_text=PASSWORD_HINT):
+    classes = field.widget.attrs.get('class', '')
+    field.widget.attrs['class'] = f'{classes} js-pw-strength'.strip()
+    field.help_text = help_text
 
 
 def apply_location_cascade_widgets(form):
@@ -65,9 +86,9 @@ class RegisterForm(UserCreationForm):
         super().__init__(*args, **kwargs)
         for name, field in self.fields.items():
             field.widget.attrs.setdefault('class', INPUT_CLASS)
-        for name in LOCATION_FIELDS:
-            self.fields[name].required = True
+        require_location_fields(self)
         apply_location_cascade_widgets(self)
+        apply_password_strength(self.fields['password1'])
 
     def save(self, commit=True):
         user = super().save(commit=False)
@@ -87,8 +108,7 @@ class ProfileForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
             field.widget.attrs.setdefault('class', INPUT_CLASS)
-        for name in LOCATION_FIELDS:
-            self.fields[name].required = True
+        require_location_fields(self)
         apply_location_cascade_widgets(self)
 
 
@@ -111,14 +131,15 @@ class AdminUserForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
             field.widget.attrs.setdefault('class', INPUT_CLASS)
-        for name in LOCATION_FIELDS:
-            self.fields[name].required = True
+        require_location_fields(self)
         apply_location_cascade_widgets(self)
 
         is_new = self.instance.pk is None
         if is_new:
             self.fields['password'].required = True
-            self.fields['password'].help_text = 'Sets the login password for this account.'
+            apply_password_strength(self.fields['password'], help_text=f'Sets the login password for this account. {PASSWORD_HINT}')
+        else:
+            apply_password_strength(self.fields['password'], help_text=self.fields['password'].help_text)
 
         if hide_tenant:
             # Used when creating an organization and its first admin in one step —
@@ -153,3 +174,19 @@ class AdminUserForm(forms.ModelForm):
         if commit:
             user.save()
         return user
+
+
+class StyledPasswordChangeForm(PasswordChangeForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            field.widget.attrs.setdefault('class', INPUT_CLASS)
+        apply_password_strength(self.fields['new_password1'])
+
+
+class StyledSetPasswordForm(SetPasswordForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            field.widget.attrs.setdefault('class', INPUT_CLASS)
+        apply_password_strength(self.fields['new_password1'])

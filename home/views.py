@@ -29,6 +29,7 @@ TESTIMONIALS = [
     },
 ]
 
+
 def _bullets(intro, items):
     lis = ''.join(f'<li>{item}</li>' for item in items)
     intro_html = f'<p>{intro}</p>' if intro else ''

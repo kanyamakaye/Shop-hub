@@ -1,10 +1,13 @@
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login as auth_login, logout as auth_logout
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import (
     PasswordChangeDoneView, PasswordChangeView,
     PasswordResetCompleteView, PasswordResetConfirmView,
     PasswordResetDoneView, PasswordResetView,
 )
+from django.core.mail import send_mail
 from django.core.paginator import Paginator
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
@@ -15,7 +18,10 @@ from config.csv_utils import csv_response
 from tenants.models import Tenant
 
 from .decorators import role_required
-from .forms import AdminUserForm, ProfileForm, RegisterForm, StyledAuthenticationForm
+from .forms import (
+    AdminUserForm, ProfileForm, RegisterForm, StyledAuthenticationForm,
+    StyledPasswordChangeForm, StyledSetPasswordForm,
+)
 from .models import User
 
 
@@ -39,6 +45,23 @@ def logout_view(request):
     return redirect('home:index')
 
 
+def _send_welcome_email(user):
+    if not user.email:
+        return
+    send_mail(
+        'Welcome to ShopHub — your account is ready',
+        f'Hi {user.first_name or user.username},\n\n'
+        'Your ShopHub account has been created. Here are your login details:\n\n'
+        f'Username: {user.username}\n'
+        f'Email: {user.email}\n\n'
+        'Use the password you set during sign-up to log in at any time.\n\n'
+        '— The ShopHub team',
+        settings.DEFAULT_FROM_EMAIL,
+        [user.email],
+        fail_silently=True,
+    )
+
+
 @require_http_methods(['GET', 'POST'])
 def register(request):
     if request.user.is_authenticated:
@@ -46,7 +69,8 @@ def register(request):
     form = RegisterForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
         user = form.save()
-        auth_login(request, user)
+        auth_login(request, user, backend='accounts.backends.EmailOrUsernameModelBackend')
+        _send_welcome_email(user)
         messages.success(request, 'Welcome to ShopHub! Your account has been created.')
         return redirect('dashboard:redirect')
     return render(request, 'accounts/register.html', {'form': form})
@@ -65,6 +89,7 @@ class StyledPasswordResetDoneView(PasswordResetDoneView):
 class StyledPasswordResetConfirmView(PasswordResetConfirmView):
     template_name = 'accounts/password_reset_confirm.html'
     success_url = reverse_lazy('accounts:password_reset_complete')
+    form_class = StyledSetPasswordForm
 
 
 class StyledPasswordResetCompleteView(PasswordResetCompleteView):
@@ -74,6 +99,7 @@ class StyledPasswordResetCompleteView(PasswordResetCompleteView):
 class StyledPasswordChangeView(PasswordChangeView):
     template_name = 'accounts/change_password.html'
     success_url = reverse_lazy('accounts:change_password_done')
+    form_class = StyledPasswordChangeForm
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -90,9 +116,8 @@ class StyledPasswordChangeDoneView(PasswordChangeDoneView):
         return context
 
 
+@login_required
 def user_profile(request):
-    if not request.user.is_authenticated:
-        return redirect('accounts:login')
     form = ProfileForm(request.POST or None, instance=request.user)
     if request.method == 'POST' and form.is_valid():
         form.save()
@@ -160,7 +185,7 @@ def user_create(request):
 
     form = AdminUserForm(request.POST or None, actor=request.user, lock_tenant=lock_tenant)
     if request.method == 'POST' and form.is_valid():
-        user = form.save()
+        form.save()
         if lock_tenant:
             messages.success(request, f'Admin account created for {lock_tenant.business_name}. Share the username and password with them so they can log in.')
             return redirect('tenants:detail', pk=lock_tenant.pk)

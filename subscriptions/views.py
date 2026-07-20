@@ -12,15 +12,13 @@ from .models import SubscriptionPlan
 
 def plan_list(request):
     """Public pricing page — anyone can browse plans; only the Owner manages them."""
-    plans = SubscriptionPlan.objects.filter(status=SubscriptionPlan.Status.ACTIVE)
+    is_owner = request.user.is_authenticated and request.user.role == User.Role.SYSTEM_OWNER
+    plans = SubscriptionPlan.objects.all() if is_owner else SubscriptionPlan.objects.filter(status=SubscriptionPlan.Status.ACTIVE)
+
     query = request.GET.get('q', '').strip()
     if query:
         plans = plans.filter(Q(plan_name__icontains=query))
-    is_owner = request.user.is_authenticated and request.user.role == User.Role.SYSTEM_OWNER
-    if is_owner:
-        plans = SubscriptionPlan.objects.all()
-        if query:
-            plans = plans.filter(Q(plan_name__icontains=query))
+
     paginator = Paginator(plans, 10)
     page_obj = paginator.get_page(request.GET.get('page'))
     return render(request, 'subscriptions/plan_list.html', {

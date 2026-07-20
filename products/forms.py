@@ -1,5 +1,7 @@
 from django import forms
 
+from categories.models import Category
+
 from .models import Product
 
 
@@ -18,7 +20,7 @@ class ProductForm(forms.ModelForm):
                 field.widget.attrs.setdefault('class', 'form-input')
         self.fields['image'].widget.attrs.setdefault('class', 'file-input')
         if tenant is not None:
-            self.fields['category'].queryset = self.fields['category'].queryset.model.objects.filter(tenant=tenant)
+            self.fields['category'].queryset = Category.objects.filter(tenant=tenant)
 
     def clean(self):
         cleaned_data = super().clean()

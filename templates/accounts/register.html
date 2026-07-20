@@ -29,7 +29,7 @@
                     {% if form.username.errors %}<p class="mt-1 text-xs text-red-600">{{ form.username.errors|join:', ' }}</p>{% endif %}
                 </div>
                 <div>
-                    <label class="form-label" for="{{ form.email.id_for_label }}">Email <span class="text-slate-400">(optional)</span></label>
+                    <label class="form-label" for="{{ form.email.id_for_label }}">Email <span class="text-slate-400">(optional — we'll send your account confirmation here)</span></label>
                     {{ form.email }}
                 </div>
             </div>
@@ -52,7 +52,7 @@
                     {% for field in form %}
                         {% if field.name in "province,district,sector,cell,village" %}
                         <div>
-                            <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }} <span class="form-required">*</span></label>
+                            <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }} {% if field.field.required %}<span class="form-required">*</span>{% else %}<span class="text-slate-400">(optional)</span>{% endif %}</label>
                             {{ field }}
                             {% if field.errors %}<p class="mt-1 text-xs text-red-600">{{ field.errors|join:', ' }}</p>{% endif %}
                         </div>
@@ -65,6 +65,7 @@
                 <div>
                     <label class="form-label" for="{{ form.password1.id_for_label }}">Password <span class="form-required">*</span></label>
                     {{ form.password1 }}
+                    <p class="mt-1 text-xs text-slate-400">{{ form.password1.help_text }}</p>
                     {% if form.password1.errors %}<p class="mt-1 text-xs text-red-600">{{ form.password1.errors|join:', ' }}</p>{% endif %}
                 </div>
                 <div>
@@ -82,4 +83,5 @@
 {% endblock %}
 {% block extra_js %}
 <script src="{% static 'js/location-cascade.js' %}"></script>
+<script src="{% static 'js/password-strength.js' %}"></script>
 {% endblock %}

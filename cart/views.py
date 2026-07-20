@@ -9,13 +9,20 @@ from accounts.models import User
 from products.models import Product
 
 from .models import Cart
+from .utils import group_items_by_store
 
 
 @role_required(User.Role.USER)
 def cart_list(request):
-    items = Cart.objects.filter(user=request.user).select_related('product', 'product__tenant')
+    items = list(Cart.objects.filter(user=request.user).select_related('product', 'product__tenant'))
+    store_groups = group_items_by_store(items)
     total = sum((item.subtotal for item in items), 0)
-    return render(request, 'cart/cart.html', {'items': items, 'total': total, 'show_sidebar': True})
+    grand_total_estimate = sum((g['estimated_total'] for g in store_groups), 0)
+    return render(request, 'cart/cart.html', {
+        'items': items, 'store_groups': store_groups,
+        'total': total, 'grand_total_estimate': grand_total_estimate,
+        'show_sidebar': True,
+    })
 
 
 @role_required(User.Role.SYSTEM_OWNER, User.Role.SYSTEM_ADMIN)

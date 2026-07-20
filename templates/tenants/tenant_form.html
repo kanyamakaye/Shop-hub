@@ -114,16 +114,17 @@
                 <div>
                     <label class="form-label" for="{{ admin_form.password.id_for_label }}">Password <span class="form-required">*</span></label>
                     {{ admin_form.password }}
+                    <p class="mt-1 text-xs text-slate-400">{{ admin_form.password.help_text }}</p>
                     {% if admin_form.password.errors %}<p class="mt-1 text-xs text-red-600">{{ admin_form.password.errors|join:', ' }}</p>{% endif %}
                 </div>
             </div>
             <div>
-                <p class="form-label mb-2">Admin's location details <span class="form-required">*</span></p>
+                <p class="form-label mb-2">Admin's location details</p>
                 <div class="grid gap-4 sm:grid-cols-2">
                     {% for field in admin_form %}
                         {% if field.name in "province,district,sector,cell,village,postal_address" %}
                         <div>
-                            <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                            <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }} {% if field.field.required %}<span class="form-required">*</span>{% else %}<span class="text-slate-400">(optional)</span>{% endif %}</label>
                             {{ field }}
                             {% if field.errors %}<p class="mt-1 text-xs text-red-600">{{ field.errors|join:', ' }}</p>{% endif %}
                         </div>
@@ -143,4 +144,5 @@
 {% endblock %}
 {% block extra_js %}
 <script src="{% static 'js/location-cascade.js' %}"></script>
+<script src="{% static 'js/password-strength.js' %}"></script>
 {% endblock %}

@@ -184,7 +184,7 @@ LOGIN_URL = 'accounts:login'
 LOGIN_REDIRECT_URL = 'dashboard:redirect'
 LOGOUT_REDIRECT_URL = 'home:index'
 
-# Password reset emails print to the console unless SMTP env vars are set.
+# Password reset / welcome emails print to the console unless SMTP env vars are set.
 if os.environ.get('EMAIL_HOST'):
     EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
     EMAIL_HOST = os.environ['EMAIL_HOST']
@@ -192,6 +192,9 @@ if os.environ.get('EMAIL_HOST'):
     EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
     EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
     EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True') == 'True'
+    # Gmail (and most SMTP providers) reject/flag mail whose From doesn't match
+    # the authenticated account, so default From to the SMTP login itself.
+    DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', f'ShopHub <{EMAIL_HOST_USER}>')
 else:
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-DEFAULT_FROM_EMAIL = 'ShopHub <noreply@shophub.local>'
+    DEFAULT_FROM_EMAIL = 'ShopHub <noreply@shophub.local>'

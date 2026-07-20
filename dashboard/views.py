@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import datetime, time, timedelta
 
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count, F, Sum
@@ -43,13 +43,20 @@ def _last_n_months(n=6):
     return months
 
 
+def _day_start(date_obj):
+    """Convert a plain date to a tz-aware midnight datetime. Filtering a DateTimeField
+    with a naive date directly silently means 'midnight only' on that day, which
+    undercounts anything that happened later that same day — always convert first."""
+    return timezone.make_aware(datetime.combine(date_obj, time.min))
+
+
 def _monthly_series(queryset, date_field, value_field=None):
     """Aggregates a queryset into a 6-month (label, value) series, filling in zero for empty months."""
     months = _last_n_months(6)
     start = timezone.now().date().replace(day=1) - timedelta(days=31 * 5)
     start = start.replace(day=1)
     annotated = (
-        queryset.filter(**{f'{date_field}__gte': start})
+        queryset.filter(**{f'{date_field}__gte': _day_start(start)})
         .annotate(month=TruncMonth(date_field))
         .values('month')
         .annotate(total=Sum(value_field) if value_field else Count('id'))
@@ -74,7 +81,13 @@ def _this_and_last_month(queryset, date_field, value_field=None):
     last_month_start = last_month_end.replace(day=1)
 
     def total_for(start, end):
-        qs = queryset.filter(**{f'{date_field}__gte': start, f'{date_field}__lte': end})
+        # __lte with a bare date means "up to midnight of that day", which would
+        # silently exclude everything from later that day — use an exclusive
+        # upper bound at the start of the following day instead.
+        qs = queryset.filter(**{
+            f'{date_field}__gte': _day_start(start),
+            f'{date_field}__lt': _day_start(end + timedelta(days=1)),
+        })
         if value_field:
             return qs.aggregate(total=Sum(value_field))['total'] or 0
         return qs.count()
@@ -99,8 +112,9 @@ def _status_progress(queryset):
 @role_required(User.Role.SYSTEM_OWNER)
 def owner_dashboard(request):
     paid_orders = Order.objects.filter(payment_status=Order.PaymentStatus.PAID)
-    revenue_this_month, revenue_change = _this_and_last_month(paid_orders, 'order_date', 'total_amount')
-    tenants_this_month, tenants_change = _this_and_last_month(Tenant.objects.all(), 'created_at')
+    # Only the month-over-month percentage is used here — the raw totals below are all-time.
+    _, revenue_change = _this_and_last_month(paid_orders, 'order_date', 'total_amount')
+    _, tenants_change = _this_and_last_month(Tenant.objects.all(), 'created_at')
 
     revenue_labels, revenue_values = _monthly_series(paid_orders, 'order_date', 'total_amount')
 
@@ -123,6 +137,7 @@ def owner_dashboard(request):
     )
 
     active_tenants = Tenant.objects.filter(status=Tenant.Status.ACTIVE).count()
+    active_users = User.objects.filter(status=User.Status.ACTIVE).count()
     context = {
         'total_tenants': total_tenants,
         'active_tenants': active_tenants,
@@ -133,10 +148,10 @@ def owner_dashboard(request):
         'paid_orders_sub': f"avg {avg_order_value:,} RWF",
         'avg_order_sub': f"across {total_orders} paid orders",
         'active_plans': SubscriptionPlan.objects.filter(status=SubscriptionPlan.Status.ACTIVE).count(),
-        'active_users': User.objects.filter(status=User.Status.ACTIVE).count(),
+        'active_users': active_users,
         'platform_wishlist_count': Wishlist.objects.count(),
         'platform_cart_count': Cart.objects.count(),
-        'banner_subtitle': f"{total_tenants} organizations · {User.objects.filter(status=User.Status.ACTIVE).count()} users",
+        'banner_subtitle': f"{total_tenants} organizations · {active_users} users",
         'recent_tenants': Tenant.objects.select_related('plan').order_by('-created_at')[:5],
         'top_tenants': top_tenants,
         'plan_distribution': plan_distribution,
@@ -155,8 +170,9 @@ def tenant_dashboard(request):
     orders = Order.objects.filter(tenant_id=tenant_id)
     paid_orders = orders.filter(payment_status=Order.PaymentStatus.PAID)
 
-    revenue_this_month, revenue_change = _this_and_last_month(paid_orders, 'order_date', 'total_amount')
-    orders_this_month, orders_change = _this_and_last_month(orders, 'order_date')
+    # Only the month-over-month percentage is used here — the raw totals below are all-time.
+    _, revenue_change = _this_and_last_month(paid_orders, 'order_date', 'total_amount')
+    _, orders_change = _this_and_last_month(orders, 'order_date')
 
     revenue_labels, revenue_values = _monthly_series(paid_orders, 'order_date', 'total_amount')
     status_rows, status_total = _status_progress(orders)
@@ -172,9 +188,10 @@ def tenant_dashboard(request):
         .annotate(qty=Sum('quantity'), revenue=Sum(F('unit_price') * F('quantity')))
         .order_by('-revenue')[:5]
     )
+    product_count = Product.objects.filter(tenant_id=tenant_id).count()
 
     context = {
-        'product_count': Product.objects.filter(tenant_id=tenant_id).count(),
+        'product_count': product_count,
         'order_count': order_count,
         'customer_count': User.objects.filter(tenant_id=tenant_id, role=User.Role.USER).count(),
         'sales_count': sales_count,
@@ -191,7 +208,7 @@ def tenant_dashboard(request):
         'orders_change': orders_change,
         'revenue_labels': revenue_labels,
         'revenue_values': revenue_values,
-        'banner_subtitle': f"{Product.objects.filter(tenant_id=tenant_id).count()} products · {order_count} orders",
+        'banner_subtitle': f"{product_count} products · {order_count} orders",
         'show_sidebar': True,
     }
     return render(request, 'dashboard/tenant_dashboard.html', context)
@@ -202,10 +219,12 @@ def customer_dashboard(request):
     orders = Order.objects.filter(user=request.user)
     status_rows, status_total = _status_progress(orders)
     order_labels, order_values = _monthly_series(orders, 'order_date')
+    order_count = orders.count()
+    wishlist_count = Wishlist.objects.filter(user=request.user).count()
 
     context = {
-        'order_count': orders.count(),
-        'wishlist_count': Wishlist.objects.filter(user=request.user).count(),
+        'order_count': order_count,
+        'wishlist_count': wishlist_count,
         'cart_count': Cart.objects.filter(user=request.user).count(),
         'review_count': Review.objects.filter(user=request.user).count(),
         'notification_count': request.user.notifications.filter(is_read=False).count(),
@@ -215,7 +234,7 @@ def customer_dashboard(request):
         'order_labels': order_labels,
         'order_values': order_values,
         'banner_title': f"Welcome, {request.user.first_name or request.user.username}",
-        'banner_subtitle': f"{orders.count()} orders · {Wishlist.objects.filter(user=request.user).count()} wishlist items",
+        'banner_subtitle': f"{order_count} orders · {wishlist_count} wishlist items",
         'show_sidebar': True,
     }
     return render(request, 'dashboard/customer_dashboard.html', context)

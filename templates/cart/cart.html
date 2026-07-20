@@ -2,40 +2,74 @@
 {% load static humanize %}
 {% block title %}Your cart{% endblock %}
 {% block content %}
-<h1 class="mb-6 text-2xl font-bold text-slate-900 dark:text-white">Your cart</h1>
+<div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+    <h1 class="text-2xl font-bold text-slate-900 dark:text-white">
+        Your cart {% if items %}<span class="text-base font-normal text-slate-400">({{ items|length }} item{{ items|pluralize }})</span>{% endif %}
+    </h1>
+    {% if items %}<a href="{% url 'products:list' %}" class="btn-outline">Continue shopping</a>{% endif %}
+</div>
 
 {% if items %}
 <div class="grid gap-8 lg:grid-cols-3">
-    <div class="space-y-4 lg:col-span-2">
-        {% for item in items %}
-        <div class="card flex items-center gap-4" data-cart-row data-price="{{ item.product.display_price }}">
-            <div class="h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-slate-100">
-                {% if item.product.image %}<img src="{{ item.product.image.url }}" class="h-full w-full object-cover" alt="">{% endif %}
+    <div class="space-y-6 lg:col-span-2">
+        {% for group in store_groups %}
+        <div>
+            <h2 class="mb-3 text-sm font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ group.tenant.business_name }}</h2>
+            <div class="space-y-4">
+                {% for item in group.items %}
+                <div class="card space-y-3" data-cart-row data-store="{{ group.tenant.pk }}" data-price="{{ item.product.display_price }}">
+                    <div class="flex items-center gap-4">
+                        <div class="h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-slate-100">
+                            {% if item.product.image %}<img src="{{ item.product.image.url }}" class="h-full w-full object-cover" alt="">{% endif %}
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <a href="{% url 'products:detail' item.product.pk %}" class="font-semibold text-slate-900 dark:text-white hover:text-brand-blue-700">{{ item.product.product_name }}</a>
+                            <p class="text-sm text-slate-500">{{ item.product.display_price|floatformat:0|intcomma }} RWF each</p>
+                        </div>
+                        <p class="shrink-0 text-right font-semibold" data-row-subtotal>{{ item.subtotal|floatformat:0|intcomma }} RWF</p>
+                    </div>
+                    <div class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3 dark:border-slate-700">
+                        <form action="{% url 'cart:update' item.pk %}" method="post" class="flex items-center gap-2">
+                            {% csrf_token %}
+                            <button type="button" class="qty-btn btn-outline h-8 w-8 p-0" data-step="-1">−</button>
+                            <input type="number" name="quantity" value="{{ item.quantity }}" min="1" class="form-input w-16 text-center" data-qty-input>
+                            <button type="button" class="qty-btn btn-outline h-8 w-8 p-0" data-step="1">+</button>
+                            <button type="submit" class="btn-outline">Update</button>
+                        </form>
+                        <button type="button" data-modal-delete="{% url 'cart:remove' item.pk %}" data-modal-title="Remove item" data-modal-message="Remove {{ item.product.product_name }} from your cart?" class="text-red-600 hover:underline">Remove</button>
+                    </div>
+                </div>
+                {% endfor %}
             </div>
-            <div class="min-w-0 flex-1">
-                <a href="{% url 'products:detail' item.product.pk %}" class="font-semibold text-slate-900 dark:text-white hover:text-brand-blue-700">{{ item.product.product_name }}</a>
-                <p class="text-sm text-slate-500">{{ item.product.display_price|floatformat:0|intcomma }} RWF each</p>
-            </div>
-            <form action="{% url 'cart:update' item.pk %}" method="post" class="flex items-center gap-2">
-                {% csrf_token %}
-                <button type="button" class="qty-btn btn-outline h-8 w-8 p-0" data-step="-1">−</button>
-                <input type="number" name="quantity" value="{{ item.quantity }}" min="1" class="form-input w-16 text-center" data-qty-input>
-                <button type="button" class="qty-btn btn-outline h-8 w-8 p-0" data-step="1">+</button>
-                <button type="submit" class="btn-outline">Update</button>
-            </form>
-            <p class="w-24 text-right font-semibold" data-row-subtotal>{{ item.subtotal|floatformat:0|intcomma }} RWF</p>
-            <button type="button" data-modal-delete="{% url 'cart:remove' item.pk %}" data-modal-title="Remove item" data-modal-message="Remove {{ item.product.product_name }} from your cart?" class="text-red-600 hover:underline">Remove</button>
         </div>
         {% endfor %}
     </div>
 
-    <div class="card h-fit">
-        <h2 class="mb-4 text-lg font-bold text-slate-900 dark:text-white">Order summary</h2>
-        <div class="flex justify-between text-sm text-slate-600">
-            <span>Subtotal</span>
-            <span id="cart-total">{{ total|floatformat:0|intcomma }} RWF</span>
+    <div class="space-y-4 lg:sticky lg:top-4 lg:h-fit">
+        {% for group in store_groups %}
+        <div class="card">
+            <h2 class="mb-3 text-sm font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ group.tenant.business_name }}</h2>
+            <div class="space-y-1 text-sm">
+                <div class="flex justify-between text-slate-500"><span>Subtotal</span><span data-store-subtotal="{{ group.tenant.pk }}">{{ group.subtotal|floatformat:0|intcomma }} RWF</span></div>
+                {% if group.tax %}<div class="flex justify-between text-slate-500"><span>Est. tax</span><span>{{ group.tax|floatformat:0|intcomma }} RWF</span></div>{% endif %}
+                {% if group.shipping %}<div class="flex justify-between text-slate-500"><span>Shipping</span><span>{{ group.shipping|floatformat:0|intcomma }} RWF</span></div>{% endif %}
+                <div class="flex justify-between border-t border-slate-100 pt-1 font-bold text-slate-900 dark:border-slate-700 dark:text-white"><span>Est. total</span><span>{{ group.estimated_total|floatformat:0|intcomma }} RWF</span></div>
+            </div>
         </div>
-        <a href="{% url 'orders:checkout' %}" class="btn-primary mt-6 w-full justify-center">Proceed to checkout</a>
+        {% endfor %}
+        <div class="card">
+            <h2 class="mb-4 text-lg font-bold text-slate-900 dark:text-white">Order summary</h2>
+            <div class="flex justify-between text-sm text-slate-600 dark:text-slate-300">
+                <span>Items subtotal</span>
+                <span id="cart-total">{{ total|floatformat:0|intcomma }} RWF</span>
+            </div>
+            <div class="mt-1 flex justify-between border-t border-slate-100 pt-2 font-bold text-slate-900 dark:border-slate-700 dark:text-white">
+                <span>Estimated total</span>
+                <span>{{ grand_total_estimate|floatformat:0|intcomma }} RWF</span>
+            </div>
+            <p class="mt-2 text-xs text-slate-400">Checking out creates a separate order per store, each with its own tax, shipping, and coupon.</p>
+            <a href="{% url 'orders:checkout' %}" class="btn-primary mt-4 w-full justify-center">Proceed to checkout</a>
+        </div>
     </div>
 </div>
 {% else %}
