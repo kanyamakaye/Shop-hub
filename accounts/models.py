@@ -1,5 +1,12 @@
+import secrets
+import string
+from datetime import timedelta
+
+from django.conf import settings
+from django.contrib.auth.hashers import check_password, make_password
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.utils import timezone
 
 
 class User(AbstractUser):
@@ -42,3 +49,34 @@ class User(AbstractUser):
     @property
     def is_customer(self):
         return self.role == self.Role.USER
+
+
+class EmailOTP(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='email_otps')
+    code_hash = models.CharField(max_length=128)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    is_used = models.BooleanField(default=False)
+    attempts = models.PositiveSmallIntegerField(default=0)
+
+    @classmethod
+    def generate_for(cls, user):
+        cls.objects.filter(user=user, is_used=False).update(is_used=True)
+        raw_code = ''.join(secrets.choice(string.digits) for _ in range(6))
+        otp = cls.objects.create(
+            user=user,
+            code_hash=make_password(raw_code),
+            expires_at=timezone.now() + timedelta(minutes=settings.OTP_EXPIRY_MINUTES),
+        )
+        return otp, raw_code
+
+    def verify_code(self, code):
+        self.attempts += 1
+        self.save(update_fields=['attempts'])
+        if self.is_used or self.attempts > settings.OTP_MAX_ATTEMPTS or timezone.now() > self.expires_at:
+            return False
+        if not check_password(code, self.code_hash):
+            return False
+        self.is_used = True
+        self.save(update_fields=['is_used'])
+        return True

@@ -176,6 +176,24 @@ class AdminUserForm(forms.ModelForm):
         return user
 
 
+class OTPVerificationForm(forms.Form):
+    code = forms.CharField(
+        min_length=6, max_length=6,
+        widget=forms.TextInput(attrs={
+            'class': INPUT_CLASS,
+            'inputmode': 'numeric',
+            'autocomplete': 'one-time-code',
+            'placeholder': '123456',
+        }),
+    )
+
+    def clean_code(self):
+        code = self.cleaned_data['code'].strip()
+        if not code.isdigit():
+            raise forms.ValidationError('Enter the 6-digit code exactly as sent.')
+        return code
+
+
 class StyledPasswordChangeForm(PasswordChangeForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
