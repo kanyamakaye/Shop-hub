@@ -1,6 +1,7 @@
 from django import forms
 from django.contrib.auth.forms import (
-    AuthenticationForm, PasswordChangeForm, SetPasswordForm, UserCreationForm,
+    AuthenticationForm, PasswordChangeForm, PasswordResetForm, SetPasswordForm,
+    UserCreationForm,
 )
 
 from tenants.models import Tenant
@@ -69,6 +70,13 @@ class StyledAuthenticationForm(AuthenticationForm):
         if user.status == User.Status.INACTIVE:
             raise forms.ValidationError(self.error_messages['inactive'], code='inactive')
         super().confirm_login_allowed(user)
+
+
+class StyledPasswordResetForm(PasswordResetForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['email'].widget.attrs.setdefault('class', INPUT_CLASS)
+        self.fields['email'].widget.attrs['placeholder'] = 'you@example.com'
 
 
 class RegisterForm(UserCreationForm):

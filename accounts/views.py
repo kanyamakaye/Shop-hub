@@ -23,7 +23,8 @@ from tenants.models import Tenant
 from .decorators import role_required
 from .forms import (
     AdminUserForm, OTPVerificationForm, ProfileForm, RegisterForm,
-    StyledAuthenticationForm, StyledPasswordChangeForm, StyledSetPasswordForm,
+    StyledAuthenticationForm, StyledPasswordChangeForm, StyledPasswordResetForm,
+    StyledSetPasswordForm,
 )
 from .models import EmailOTP, User
 
@@ -188,6 +189,7 @@ class StyledPasswordResetView(PasswordResetView):
     template_name = 'accounts/forgot_password.html'
     email_template_name = 'accounts/password_reset_email.txt'
     success_url = reverse_lazy('accounts:password_reset_done')
+    form_class = StyledPasswordResetForm
 
 
 class StyledPasswordResetDoneView(PasswordResetDoneView):
