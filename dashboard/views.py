@@ -1,3 +1,4 @@
+import calendar as calendar_module
 from datetime import datetime, time, timedelta
 
 from django.contrib.auth.decorators import login_required
@@ -109,6 +110,50 @@ def _status_progress(queryset):
     return rows, total
 
 
+def _month_calendar(activity_days):
+    """Builds a Sunday-first week grid for the current month, like a normal calendar:
+    full 6-row grid with the leading/trailing days of the adjacent months shown
+    (greyed out), not blank cells. activity_days is a set/iterable of day-of-month
+    ints (real dates something happened) used to mark a dot on that cell — no
+    fabricated events, only cells for days with real activity."""
+    today = timezone.now().date()
+    activity_days = set(activity_days)
+    cal = calendar_module.Calendar(firstweekday=6)  # Sunday first, matching the reference layout
+    dates = list(cal.itermonthdates(today.year, today.month))
+    weeks = [dates[i:i + 7] for i in range(0, len(dates), 7)]
+    weeks = [
+        [
+            {
+                'day': date.day,
+                'in_month': date.month == today.month,
+                'is_today': date == today,
+                'has_activity': date.month == today.month and date.day in activity_days,
+            }
+            for date in week
+        ]
+        for week in weeks
+    ]
+    return {
+        'weeks': weeks,
+        'month_label': today.strftime('%B %Y'),
+        'weekday_labels': ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'],
+    }
+
+
+@login_required
+def print_calendar(request):
+    """Plain, undecorated month grid meant for printing — no today-highlight, no
+    activity dots, no adjacent-month days, matching a classic printable calendar."""
+    today = timezone.now().date()
+    cal = calendar_module.Calendar(firstweekday=6)
+    context = {
+        'month_label': today.strftime('%B %Y'),
+        'weeks': cal.monthdayscalendar(today.year, today.month),
+        'weekday_labels': ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+    }
+    return render(request, 'dashboard/print_calendar.html', context)
+
+
 @role_required(User.Role.SYSTEM_OWNER)
 def owner_dashboard(request):
     paid_orders = Order.objects.filter(payment_status=Order.PaymentStatus.PAID)
@@ -138,6 +183,22 @@ def owner_dashboard(request):
 
     active_tenants = Tenant.objects.filter(status=Tenant.Status.ACTIVE).count()
     active_users = User.objects.filter(status=User.Status.ACTIVE).count()
+    suspended_tenants = Tenant.objects.filter(status=Tenant.Status.SUSPENDED).count()
+    inactive_tenants = Tenant.objects.filter(status=Tenant.Status.INACTIVE).count()
+    unread_notifications = request.user.notifications.filter(is_read=False).count()
+
+    today = timezone.now().date()
+    signup_days = set(
+        Tenant.objects.filter(created_at__year=today.year, created_at__month=today.month)
+        .values_list('created_at__day', flat=True)
+    )
+
+    pending_tasks = [
+        {'label': 'Suspended organizations', 'count': suspended_tenants, 'href': '/tenants/?status=Suspended'},
+        {'label': 'Inactive organizations', 'count': inactive_tenants, 'href': '/tenants/?status=Inactive'},
+        {'label': 'Unread notifications', 'count': unread_notifications, 'href': '/notifications/'},
+    ]
+
     context = {
         'total_tenants': total_tenants,
         'active_tenants': active_tenants,
@@ -159,6 +220,9 @@ def owner_dashboard(request):
         'tenants_change': tenants_change,
         'revenue_labels': revenue_labels,
         'revenue_values': revenue_values,
+        'pending_tasks': pending_tasks,
+        'recent_notifications': request.user.notifications.all()[:5],
+        'calendar': _month_calendar(signup_days),
         'show_sidebar': True,
     }
     return render(request, 'dashboard/owner_dashboard.html', context)
@@ -190,6 +254,26 @@ def tenant_dashboard(request):
     )
     product_count = Product.objects.filter(tenant_id=tenant_id).count()
 
+    pending_orders = orders.filter(order_status=Order.OrderStatus.PENDING).count()
+    low_stock_count = Product.objects.filter(
+        tenant_id=tenant_id, stock_quantity__gt=0, stock_quantity__lte=F('low_stock_threshold'),
+    ).count()
+    out_of_stock_count = Product.objects.filter(tenant_id=tenant_id, stock_quantity=0).count()
+    unread_notifications = request.user.notifications.filter(is_read=False).count()
+
+    pending_tasks = [
+        {'label': 'Pending orders', 'count': pending_orders, 'href': '/orders/?order_status=Pending'},
+        {'label': 'Low stock products', 'count': low_stock_count, 'href': '/products/manage/?stock_level=low'},
+        {'label': 'Out of stock products', 'count': out_of_stock_count, 'href': '/products/manage/?stock_level=out'},
+        {'label': 'Unread notifications', 'count': unread_notifications, 'href': '/notifications/'},
+    ]
+
+    today = timezone.now().date()
+    order_days = set(
+        orders.filter(order_date__year=today.year, order_date__month=today.month)
+        .values_list('order_date__day', flat=True)
+    )
+
     context = {
         'product_count': product_count,
         'order_count': order_count,
@@ -209,6 +293,9 @@ def tenant_dashboard(request):
         'revenue_labels': revenue_labels,
         'revenue_values': revenue_values,
         'banner_subtitle': f"{product_count} products · {order_count} orders",
+        'pending_tasks': pending_tasks,
+        'recent_notifications': request.user.notifications.all()[:5],
+        'calendar': _month_calendar(order_days),
         'show_sidebar': True,
     }
     return render(request, 'dashboard/tenant_dashboard.html', context)
@@ -221,18 +308,36 @@ def customer_dashboard(request):
     order_labels, order_values = _monthly_series(orders, 'order_date')
     order_count = orders.count()
     wishlist_count = Wishlist.objects.filter(user=request.user).count()
+    cart_count = Cart.objects.filter(user=request.user).count()
+    unread_notifications = request.user.notifications.filter(is_read=False).count()
+    active_orders = orders.filter(order_status__in=[Order.OrderStatus.PENDING, Order.OrderStatus.PROCESSING]).count()
+
+    pending_tasks = [
+        {'label': 'Orders in progress', 'count': active_orders, 'href': '/orders/?order_status=Pending'},
+        {'label': 'Items in cart', 'count': cart_count, 'href': '/cart/'},
+        {'label': 'Unread notifications', 'count': unread_notifications, 'href': '/notifications/'},
+    ]
+
+    today = timezone.now().date()
+    order_days = set(
+        orders.filter(order_date__year=today.year, order_date__month=today.month)
+        .values_list('order_date__day', flat=True)
+    )
 
     context = {
         'order_count': order_count,
         'wishlist_count': wishlist_count,
-        'cart_count': Cart.objects.filter(user=request.user).count(),
+        'cart_count': cart_count,
         'review_count': Review.objects.filter(user=request.user).count(),
-        'notification_count': request.user.notifications.filter(is_read=False).count(),
+        'notification_count': unread_notifications,
         'recent_orders': orders.select_related('tenant').order_by('-order_date')[:5],
         'status_rows': status_rows,
         'status_total': status_total,
         'order_labels': order_labels,
         'order_values': order_values,
+        'pending_tasks': pending_tasks,
+        'recent_notifications': request.user.notifications.all()[:5],
+        'calendar': _month_calendar(order_days),
         'banner_title': f"Welcome, {request.user.first_name or request.user.username}",
         'banner_subtitle': f"{order_count} orders · {wishlist_count} wishlist items",
         'show_sidebar': True,

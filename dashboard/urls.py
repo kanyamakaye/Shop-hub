@@ -9,4 +9,5 @@ urlpatterns = [
     path('owner/', views.owner_dashboard, name='owner'),
     path('tenant/', views.tenant_dashboard, name='tenant'),
     path('customer/', views.customer_dashboard, name='customer'),
+    path('print/', views.print_calendar, name='print_calendar'),
 ]

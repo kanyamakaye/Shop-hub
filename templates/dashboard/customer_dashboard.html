@@ -13,44 +13,58 @@
 </div>
 
 <div class="mt-6 grid gap-6 lg:grid-cols-3">
-    <div class="card lg:col-span-2">
-        <h2 class="mb-4 text-sm font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Orders placed (last 6 months)</h2>
-        <canvas id="orders-chart" height="110"></canvas>
-    </div>
-    <div class="card">
-        <h2 class="mb-4 text-sm font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Orders by status</h2>
-        {% include "dashboard/_progress_bars.html" with rows=status_rows total=status_total empty_text="No orders yet." %}
-    </div>
-</div>
+    <div class="space-y-6 lg:col-span-2">
+        <div class="card">
+            <h2 class="mb-4 text-sm font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Orders placed (last 6 months)</h2>
+            <canvas id="orders-chart" height="110"></canvas>
+        </div>
 
-<div class="card mt-6">
-    <h2 class="mb-4 text-lg font-bold text-slate-900 dark:text-white">Recent orders</h2>
-    <table class="table-base">
-        <thead><tr><th>Order</th><th>Store</th><th>Total</th><th>Status</th></tr></thead>
-        <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
-            {% for order in recent_orders %}
-            <tr>
-                <td><a href="{% url 'orders:detail' order.pk %}" class="hover:text-brand-blue-700">#{{ order.pk }}</a></td>
-                <td>{{ order.tenant.business_name }}</td>
-                <td>{{ order.total_amount|floatformat:0|intcomma }} RWF</td>
-                <td><span class="badge-blue">{{ order.order_status }}</span></td>
-            </tr>
-            {% empty %}
-            <tr><td colspan="4" class="py-6 text-center text-slate-400">No orders yet. <a href="{% url 'products:list' %}" class="text-brand-blue-600 hover:underline">Start shopping</a>.</td></tr>
-            {% endfor %}
-        </tbody>
-    </table>
+        <div class="card">
+            <h2 class="mb-4 text-lg font-bold text-slate-900 dark:text-white">Recent orders</h2>
+            <table class="table-base">
+                <thead><tr><th>Order</th><th>Store</th><th>Total</th><th>Status</th></tr></thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+                    {% for order in recent_orders %}
+                    <tr>
+                        <td><a href="{% url 'orders:detail' order.pk %}" class="hover:text-brand-blue-700">#{{ order.pk }}</a></td>
+                        <td>{{ order.tenant.business_name }}</td>
+                        <td>{{ order.total_amount|floatformat:0|intcomma }} RWF</td>
+                        <td><span class="badge-blue">{{ order.order_status }}</span></td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4" class="py-6 text-center text-slate-400">No orders yet. <a href="{% url 'products:list' %}" class="text-brand-blue-600 hover:underline">Start shopping</a>.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="space-y-6">
+        <div class="card">
+            <h2 class="mb-4 text-sm font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Orders by status</h2>
+            <canvas id="status-chart" height="160"></canvas>
+            <div class="mt-4">
+                {% include "dashboard/_progress_bars.html" with rows=status_rows total=status_total empty_text="No orders yet." %}
+            </div>
+        </div>
+
+        {% include "dashboard/_calendar.html" with calendar=calendar %}
+        {% include "dashboard/_pending_tasks.html" with tasks=pending_tasks %}
+        {% include "dashboard/_announcements.html" with notifications=recent_notifications %}
+    </div>
 </div>
 {% endblock %}
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 {{ order_labels|json_script:"order-labels" }}
 {{ order_values|json_script:"order-values" }}
+{{ status_rows|json_script:"status-rows-data" }}
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     const isDark = document.documentElement.classList.contains('dark');
     const gridColor = isDark ? 'rgba(148,163,184,0.15)' : 'rgba(100,116,139,0.1)';
     const tickColor = isDark ? '#94a3b8' : '#64748b';
+    const palette = ['#94a3b8', '#3366ff', '#f9740c', '#0fbf76', '#f59e0b', '#a855f7', '#ef4444'];
 
     new Chart(document.getElementById('orders-chart'), {
         type: 'bar',
@@ -71,6 +85,26 @@ document.addEventListener('DOMContentLoaded', () => {
             },
         },
     });
+
+    const statusRows = JSON.parse(document.getElementById('status-rows-data').textContent).filter(r => r.count > 0);
+    if (statusRows.length) {
+        new Chart(document.getElementById('status-chart'), {
+            type: 'doughnut',
+            data: {
+                labels: statusRows.map(r => r.label),
+                datasets: [{
+                    data: statusRows.map(r => r.count),
+                    backgroundColor: statusRows.map((_, i) => palette[i % palette.length]),
+                    borderColor: isDark ? '#1e293b' : '#ffffff',
+                    borderWidth: 2,
+                }],
+            },
+            options: {
+                cutout: '68%',
+                plugins: { legend: { display: false } },
+            },
+        });
+    }
 });
 </script>
 {% endblock %}

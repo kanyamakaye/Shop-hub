@@ -1,6 +1,6 @@
 {% load static %}
 <aside class="h-full w-56 shrink-0">
-    <nav class="card sticky top-20 flex h-full flex-col space-y-1 overflow-y-auto p-3">
+    <nav class="card sticky top-20 flex max-h-[calc(100vh-6rem)] flex-col space-y-1 overflow-y-auto p-3">
         <a href="{% url 'home:index' %}" class="sidebar-link flex items-center gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4">
                 <path d="m3 12 9-9 9 9" />
@@ -11,32 +11,54 @@
         <hr class="my-2 border-slate-200 dark:border-slate-700">
         {% if user.role == 'System Owner' %}
             <p class="px-2 pb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">Owner</p>
-            <a href="{% url 'dashboard:owner' %}" class="sidebar-link flex items-center gap-2">{% include "_sidebar_icon.html" with icon="dashboard" color="blue" %} Dashboard</a>
-            <a href="{% url 'subscriptions:list' %}" class="sidebar-link flex items-center gap-2">{% include "_sidebar_icon.html" with icon="plans" color="green" %} Subscription Plans</a>
-            <a href="{% url 'tenants:list' %}" class="sidebar-link flex items-center gap-2">{% include "_sidebar_icon.html" with icon="org" color="blue" %} Organizations</a>
-            <a href="{% url 'accounts:user_list' %}" class="sidebar-link flex items-center gap-2">{% include "_sidebar_icon.html" with icon="users" color="green" %} All Users</a>
-            <a href="{% url 'wishlist:overview' %}" class="sidebar-link flex items-center gap-2">{% include "_sidebar_icon.html" with icon="wishlist" color="blue" %} Wishlist Activity</a>
-            <a href="{% url 'cart:overview' %}" class="sidebar-link flex items-center gap-2">{% include "_sidebar_icon.html" with icon="cart" color="green" %} Cart Activity</a>
-            <a href="{% url 'accounts:platform_settings' %}" class="sidebar-link flex items-center gap-2">{% include "_sidebar_icon.html" with icon="lock" color="blue" %} Platform Settings</a>
+            {% url 'dashboard:owner' as owner_url %}
+            <a href="{{ owner_url }}" class="sidebar-link flex items-center gap-2 {% if request.path == owner_url %}bg-brand-blue-50 font-semibold text-brand-blue-700 dark:bg-slate-700 dark:text-brand-blue-300{% endif %}">{% include "_sidebar_icon.html" with icon="dashboard" color="blue" %} Dashboard</a>
+            {% url 'subscriptions:list' as plans_url %}
+            <a href="{{ plans_url }}" class="sidebar-link flex items-center gap-2 {% if request.path == plans_url %}bg-brand-blue-50 font-semibold text-brand-blue-700 dark:bg-slate-700 dark:text-brand-blue-300{% endif %}">{% include "_sidebar_icon.html" with icon="plans" color="green" %} Subscription Plans</a>
+            {% url 'tenants:list' as tenants_url %}
+            <a href="{{ tenants_url }}" class="sidebar-link flex items-center gap-2 {% if request.path == tenants_url %}bg-brand-blue-50 font-semibold text-brand-blue-700 dark:bg-slate-700 dark:text-brand-blue-300{% endif %}">{% include "_sidebar_icon.html" with icon="org" color="blue" %} Organizations</a>
+            {% url 'accounts:user_list' as users_url %}
+            <a href="{{ users_url }}" class="sidebar-link flex items-center gap-2 {% if request.path == users_url %}bg-brand-blue-50 font-semibold text-brand-blue-700 dark:bg-slate-700 dark:text-brand-blue-300{% endif %}">{% include "_sidebar_icon.html" with icon="users" color="green" %} All Users</a>
+            {% url 'wishlist:overview' as wishlist_url %}
+            <a href="{{ wishlist_url }}" class="sidebar-link flex items-center gap-2 {% if request.path == wishlist_url %}bg-brand-blue-50 font-semibold text-brand-blue-700 dark:bg-slate-700 dark:text-brand-blue-300{% endif %}">{% include "_sidebar_icon.html" with icon="wishlist" color="blue" %} Wishlist Activity</a>
+            {% url 'cart:overview' as cart_url %}
+            <a href="{{ cart_url }}" class="sidebar-link flex items-center gap-2 {% if request.path == cart_url %}bg-brand-blue-50 font-semibold text-brand-blue-700 dark:bg-slate-700 dark:text-brand-blue-300{% endif %}">{% include "_sidebar_icon.html" with icon="cart" color="green" %} Cart Activity</a>
+            {% url 'accounts:platform_settings' as settings_url %}
+            <a href="{{ settings_url }}" class="sidebar-link flex items-center gap-2 {% if request.path == settings_url %}bg-brand-blue-50 font-semibold text-brand-blue-700 dark:bg-slate-700 dark:text-brand-blue-300{% endif %}">{% include "_sidebar_icon.html" with icon="lock" color="blue" %} Platform Settings</a>
         {% elif user.role == 'System Admin' %}
             <p class="px-2 pb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">{{ user.tenant.business_name }}</p>
-            <a href="{% url 'dashboard:tenant' %}" class="sidebar-link flex items-center gap-2">{% include "_sidebar_icon.html" with icon="dashboard" color="blue" %} Dashboard</a>
-            <a href="{% url 'categories:list' %}" class="sidebar-link flex items-center gap-2">{% include "_sidebar_icon.html" with icon="categories" color="green" %} Categories</a>
-            <a href="{% url 'products:manage_list' %}" class="sidebar-link flex items-center gap-2">{% include "_sidebar_icon.html" with icon="products" color="blue" %} Products</a>
-            <a href="{% url 'orders:list' %}" class="sidebar-link flex items-center gap-2">{% include "_sidebar_icon.html" with icon="orders" color="green" %} Orders</a>
-            <a href="{% url 'coupons:list' %}" class="sidebar-link flex items-center gap-2">{% include "_sidebar_icon.html" with icon="tag" color="blue" %} Coupons</a>
-            <a href="{% url 'accounts:user_list' %}" class="sidebar-link flex items-center gap-2">{% include "_sidebar_icon.html" with icon="users" color="green" %} Staff &amp; Customers</a>
-            <a href="{% url 'wishlist:overview' %}" class="sidebar-link flex items-center gap-2">{% include "_sidebar_icon.html" with icon="wishlist" color="green" %} Wishlist Activity</a>
-            <a href="{% url 'cart:overview' %}" class="sidebar-link flex items-center gap-2">{% include "_sidebar_icon.html" with icon="cart" color="blue" %} Cart Activity</a>
-            <a href="{% url 'notifications:list' %}" class="sidebar-link flex items-center gap-2">{% include "_sidebar_icon.html" with icon="bell" color="green" %} Notifications</a>
+            {% url 'dashboard:tenant' as tenant_dash_url %}
+            <a href="{{ tenant_dash_url }}" class="sidebar-link flex items-center gap-2 {% if request.path == tenant_dash_url %}bg-brand-blue-50 font-semibold text-brand-blue-700 dark:bg-slate-700 dark:text-brand-blue-300{% endif %}">{% include "_sidebar_icon.html" with icon="dashboard" color="blue" %} Dashboard</a>
+            {% url 'categories:list' as categories_url %}
+            <a href="{{ categories_url }}" class="sidebar-link flex items-center gap-2 {% if request.path == categories_url %}bg-brand-blue-50 font-semibold text-brand-blue-700 dark:bg-slate-700 dark:text-brand-blue-300{% endif %}">{% include "_sidebar_icon.html" with icon="categories" color="green" %} Categories</a>
+            {% url 'products:manage_list' as products_url %}
+            <a href="{{ products_url }}" class="sidebar-link flex items-center gap-2 {% if request.path == products_url %}bg-brand-blue-50 font-semibold text-brand-blue-700 dark:bg-slate-700 dark:text-brand-blue-300{% endif %}">{% include "_sidebar_icon.html" with icon="products" color="blue" %} Products</a>
+            {% url 'orders:list' as orders_url %}
+            <a href="{{ orders_url }}" class="sidebar-link flex items-center gap-2 {% if request.path == orders_url %}bg-brand-blue-50 font-semibold text-brand-blue-700 dark:bg-slate-700 dark:text-brand-blue-300{% endif %}">{% include "_sidebar_icon.html" with icon="orders" color="green" %} Orders</a>
+            {% url 'coupons:list' as coupons_url %}
+            <a href="{{ coupons_url }}" class="sidebar-link flex items-center gap-2 {% if request.path == coupons_url %}bg-brand-blue-50 font-semibold text-brand-blue-700 dark:bg-slate-700 dark:text-brand-blue-300{% endif %}">{% include "_sidebar_icon.html" with icon="tag" color="blue" %} Coupons</a>
+            {% url 'accounts:user_list' as staff_url %}
+            <a href="{{ staff_url }}" class="sidebar-link flex items-center gap-2 {% if request.path == staff_url %}bg-brand-blue-50 font-semibold text-brand-blue-700 dark:bg-slate-700 dark:text-brand-blue-300{% endif %}">{% include "_sidebar_icon.html" with icon="users" color="green" %} Staff &amp; Customers</a>
+            {% url 'wishlist:overview' as wishlist_url %}
+            <a href="{{ wishlist_url }}" class="sidebar-link flex items-center gap-2 {% if request.path == wishlist_url %}bg-brand-blue-50 font-semibold text-brand-blue-700 dark:bg-slate-700 dark:text-brand-blue-300{% endif %}">{% include "_sidebar_icon.html" with icon="wishlist" color="green" %} Wishlist Activity</a>
+            {% url 'cart:overview' as cart_url %}
+            <a href="{{ cart_url }}" class="sidebar-link flex items-center gap-2 {% if request.path == cart_url %}bg-brand-blue-50 font-semibold text-brand-blue-700 dark:bg-slate-700 dark:text-brand-blue-300{% endif %}">{% include "_sidebar_icon.html" with icon="cart" color="blue" %} Cart Activity</a>
+            {% url 'notifications:list' as notifications_url %}
+            <a href="{{ notifications_url }}" class="sidebar-link flex items-center gap-2 {% if request.path == notifications_url %}bg-brand-blue-50 font-semibold text-brand-blue-700 dark:bg-slate-700 dark:text-brand-blue-300{% endif %}">{% include "_sidebar_icon.html" with icon="bell" color="green" %} Notifications</a>
         {% else %}
             <p class="px-2 pb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">My Account</p>
-            <a href="{% url 'dashboard:customer' %}" class="sidebar-link flex items-center gap-2">{% include "_sidebar_icon.html" with icon="dashboard" color="blue" %} Dashboard</a>
-            <a href="{% url 'orders:list' %}" class="sidebar-link flex items-center gap-2">{% include "_sidebar_icon.html" with icon="orders" color="green" %} My Orders</a>
-            <a href="{% url 'wishlist:list' %}" class="sidebar-link flex items-center gap-2">{% include "_sidebar_icon.html" with icon="wishlist" color="blue" %} Wishlist</a>
-            <a href="{% url 'notifications:list' %}" class="sidebar-link flex items-center gap-2">{% include "_sidebar_icon.html" with icon="bell" color="green" %} Notifications</a>
-            <a href="{% url 'accounts:profile' %}" class="sidebar-link flex items-center gap-2">{% include "_sidebar_icon.html" with icon="profile" color="blue" %} Profile</a>
-            <a href="{% url 'accounts:change_password' %}" class="sidebar-link flex items-center gap-2">{% include "_sidebar_icon.html" with icon="lock" color="green" %} Change Password</a>
+            {% url 'dashboard:customer' as customer_dash_url %}
+            <a href="{{ customer_dash_url }}" class="sidebar-link flex items-center gap-2 {% if request.path == customer_dash_url %}bg-brand-blue-50 font-semibold text-brand-blue-700 dark:bg-slate-700 dark:text-brand-blue-300{% endif %}">{% include "_sidebar_icon.html" with icon="dashboard" color="blue" %} Dashboard</a>
+            {% url 'orders:list' as orders_url %}
+            <a href="{{ orders_url }}" class="sidebar-link flex items-center gap-2 {% if request.path == orders_url %}bg-brand-blue-50 font-semibold text-brand-blue-700 dark:bg-slate-700 dark:text-brand-blue-300{% endif %}">{% include "_sidebar_icon.html" with icon="orders" color="green" %} My Orders</a>
+            {% url 'wishlist:list' as wishlist_url %}
+            <a href="{{ wishlist_url }}" class="sidebar-link flex items-center gap-2 {% if request.path == wishlist_url %}bg-brand-blue-50 font-semibold text-brand-blue-700 dark:bg-slate-700 dark:text-brand-blue-300{% endif %}">{% include "_sidebar_icon.html" with icon="wishlist" color="blue" %} Wishlist</a>
+            {% url 'notifications:list' as notifications_url %}
+            <a href="{{ notifications_url }}" class="sidebar-link flex items-center gap-2 {% if request.path == notifications_url %}bg-brand-blue-50 font-semibold text-brand-blue-700 dark:bg-slate-700 dark:text-brand-blue-300{% endif %}">{% include "_sidebar_icon.html" with icon="bell" color="green" %} Notifications</a>
+            {% url 'accounts:profile' as profile_url %}
+            <a href="{{ profile_url }}" class="sidebar-link flex items-center gap-2 {% if request.path == profile_url %}bg-brand-blue-50 font-semibold text-brand-blue-700 dark:bg-slate-700 dark:text-brand-blue-300{% endif %}">{% include "_sidebar_icon.html" with icon="profile" color="blue" %} Profile</a>
+            {% url 'accounts:change_password' as password_url %}
+            <a href="{{ password_url }}" class="sidebar-link flex items-center gap-2 {% if request.path == password_url %}bg-brand-blue-50 font-semibold text-brand-blue-700 dark:bg-slate-700 dark:text-brand-blue-300{% endif %}">{% include "_sidebar_icon.html" with icon="lock" color="green" %} Change Password</a>
         {% endif %}
     </nav>
 </aside>
