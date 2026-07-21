@@ -11,23 +11,22 @@ from django.contrib.auth.views import (
 )
 from django.core.mail import send_mail
 from django.core.paginator import Paginator
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 
 from config.csv_utils import csv_response
-from products.models import Product
 from tenants.models import Tenant
 
 from .decorators import role_required
 from .forms import (
-    AdminUserForm, OTPVerificationForm, ProfileForm, RegisterForm,
-    StyledAuthenticationForm, StyledPasswordChangeForm, StyledPasswordResetForm,
-    StyledSetPasswordForm,
+    AdminUserForm, OTPVerificationForm, PlatformSettingsForm, ProfileForm,
+    RegisterForm, StyledAuthenticationForm, StyledPasswordChangeForm,
+    StyledPasswordResetForm, StyledSetPasswordForm,
 )
-from .models import EmailOTP, User
+from .models import EmailOTP, PlatformSettings, User
 
 
 def _send_otp_email(user, code):
@@ -45,10 +44,11 @@ def _send_otp_email(user, code):
 
 
 def _begin_session_or_challenge(request, user, backend, welcome_message):
-    """Log the user straight in if they have no email on file (nothing to
-    verify an OTP against); otherwise stash a pending challenge in the
-    session and require a code before establishing the real session."""
-    if not user.email:
+    """Log the user straight in if 2FA is turned off platform-wide, or if
+    they have no email on file (nothing to verify an OTP against);
+    otherwise stash a pending challenge in the session and require a code
+    before establishing the real session."""
+    if not user.email or not PlatformSettings.get_solo().two_factor_enabled:
         auth_login(request, user, backend=backend)
         messages.success(request, welcome_message)
         return redirect('dashboard:redirect')
@@ -71,10 +71,7 @@ def login_view(request):
         user = form.get_user()
         welcome_message = f'Welcome back, {user.first_name or user.username}!'
         return _begin_session_or_challenge(request, user, user.backend, welcome_message)
-    showcase_products = Product.objects.filter(
-        status=Product.Status.ACTIVE, image__isnull=False,
-    ).exclude(image='').order_by('-created_at')[:4]
-    return render(request, 'accounts/login.html', {'form': form, 'showcase_products': showcase_products})
+    return render(request, 'accounts/login.html', {'form': form})
 
 
 @require_http_methods(['GET', 'POST'])
@@ -248,7 +245,13 @@ def _visible_users(user):
 
 @role_required(User.Role.SYSTEM_OWNER, User.Role.SYSTEM_ADMIN)
 def user_list(request):
-    users = _visible_users(request.user).order_by('-created_at')
+    visible_users = _visible_users(request.user)
+    stats = visible_users.aggregate(
+        total=Count('id'),
+        active=Count('id', filter=Q(status=User.Status.ACTIVE)),
+        staff=Count('id', filter=Q(role__in=[User.Role.SYSTEM_OWNER, User.Role.SYSTEM_ADMIN])),
+    )
+    users = visible_users.order_by('-created_at')
     query = request.GET.get('q', '').strip()
     if query:
         users = users.filter(
@@ -285,7 +288,7 @@ def user_list(request):
     page_obj = paginator.get_page(request.GET.get('page'))
     return render(request, 'accounts/user_list.html', {
         'page_obj': page_obj, 'query': query, 'filter_tenant': filter_tenant, 'show_sidebar': True,
-        'base_query': base_query, 'role': role, 'status': status,
+        'base_query': base_query, 'role': role, 'status': status, 'stats': stats,
         'role_choices': User.Role.choices, 'status_choices': User.Status.choices,
     })
 
@@ -327,3 +330,14 @@ def user_delete(request, pk):
         messages.success(request, 'User deleted.')
         return redirect('accounts:user_list')
     return render(request, 'accounts/user_delete.html', {'target': target, 'show_sidebar': True})
+
+
+@role_required(User.Role.SYSTEM_OWNER)
+def platform_settings(request):
+    settings_obj = PlatformSettings.get_solo()
+    form = PlatformSettingsForm(request.POST or None, instance=settings_obj)
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        messages.success(request, 'Platform settings updated.')
+        return redirect('accounts:platform_settings')
+    return render(request, 'accounts/platform_settings.html', {'form': form, 'show_sidebar': True})

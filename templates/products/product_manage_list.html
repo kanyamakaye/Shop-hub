@@ -2,12 +2,17 @@
 {% load humanize %}
 {% block title %}My products{% endblock %}
 {% block content %}
-<div class="mb-6 flex flex-wrap items-center justify-between gap-3">
-    <h1 class="text-2xl font-bold text-slate-900 dark:text-white">Products</h1>
-    <div class="flex gap-2">
-        <a href="?export=csv" class="btn-outline">Export CSV</a>
-        <a href="{% url 'products:create' %}" class="btn-primary">+ New product</a>
-    </div>
+{% include "dashboard/_banner.html" with title="Products" subtitle="Manage your store's catalog" icon="products" %}
+
+<div class="mb-6 grid grid-cols-3 gap-4">
+    {% include "dashboard/_kpi_card.html" with icon="products" icon_bg="bg-brand-blue-100 dark:bg-brand-blue-900/40" icon_color="blue" label="Total products" value=stats.total %}
+    {% include "dashboard/_kpi_card.html" with icon="check" icon_bg="bg-brand-green-100 dark:bg-brand-green-900/40" icon_color="green" label="Active" value=stats.active %}
+    {% include "dashboard/_kpi_card.html" with icon="bell" icon_bg="bg-brand-orange-100 dark:bg-brand-orange-900/40" icon_color="orange" label="Needs restock" value=stats.needs_restock %}
+</div>
+
+<div class="mb-6 flex flex-wrap items-center justify-end gap-2">
+    <a href="?export=csv" class="btn-outline">Export CSV</a>
+    <a href="{% url 'products:create' %}" class="btn-primary">+ New product</a>
 </div>
 
 <form method="get" id="filter-form" class="card mb-6">

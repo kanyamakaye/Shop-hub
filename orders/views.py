@@ -3,7 +3,7 @@ from django.contrib import messages
 from django.core.mail import send_mail
 from django.core.paginator import Paginator
 from django.db import transaction
-from django.db.models import F
+from django.db.models import Count, F, Q, Sum
 from django.shortcuts import get_object_or_404, redirect, render
 
 from accounts.decorators import role_required
@@ -37,7 +37,15 @@ def _send_mail_silently(subject, message, recipient):
 
 @role_required(User.Role.SYSTEM_ADMIN, User.Role.USER, User.Role.SYSTEM_OWNER)
 def order_list(request):
-    orders = _visible_orders(request.user).select_related('tenant', 'user')
+    base_orders = _visible_orders(request.user)
+    stats = None
+    if request.user.role != User.Role.USER:
+        stats = base_orders.aggregate(
+            total=Count('id'),
+            pending=Count('id', filter=Q(order_status=Order.OrderStatus.PENDING)),
+            revenue=Sum('total_amount', filter=Q(payment_status=Order.PaymentStatus.PAID)),
+        )
+    orders = base_orders.select_related('tenant', 'user')
 
     order_status = request.GET.get('order_status', '').strip()
     payment_status = request.GET.get('payment_status', '').strip()
@@ -80,7 +88,7 @@ def order_list(request):
     paginator = Paginator(orders, 10)
     page_obj = paginator.get_page(request.GET.get('page'))
     return render(request, 'orders/order_list.html', {
-        'page_obj': page_obj, 'show_sidebar': True, 'base_query': base_query,
+        'page_obj': page_obj, 'show_sidebar': True, 'base_query': base_query, 'stats': stats,
         'order_status': order_status, 'payment_status': payment_status,
         'date_from': date_from, 'date_to': date_to, 'min_total': min_total, 'max_total': max_total,
         'order_status_choices': Order.OrderStatus.choices, 'payment_status_choices': Order.PaymentStatus.choices,

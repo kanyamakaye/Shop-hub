@@ -1,8 +1,9 @@
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 
 from accounts.decorators import role_required
 from accounts.forms import AdminUserForm
@@ -15,7 +16,14 @@ from .models import Tenant
 
 @role_required(User.Role.SYSTEM_OWNER)
 def tenant_list(request):
-    tenants = Tenant.objects.select_related('plan').all()
+    all_tenants = Tenant.objects.all()
+    month_start = timezone.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    stats = all_tenants.aggregate(
+        total=Count('id'),
+        active=Count('id', filter=Q(status=Tenant.Status.ACTIVE)),
+        new_this_month=Count('id', filter=Q(created_at__gte=month_start)),
+    )
+    tenants = all_tenants.select_related('plan')
     query = request.GET.get('q', '').strip()
     plan_id = request.GET.get('plan', '').strip()
     status = request.GET.get('status', '').strip()
@@ -36,7 +44,7 @@ def tenant_list(request):
     return render(request, 'tenants/tenant_list.html', {
         'page_obj': page_obj, 'query': query, 'show_sidebar': True, 'base_query': base_query,
         'plans': SubscriptionPlan.objects.all(), 'plan_id': plan_id, 'status': status,
-        'status_choices': Tenant.Status.choices,
+        'status_choices': Tenant.Status.choices, 'stats': stats,
     })
 
 

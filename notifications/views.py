@@ -1,6 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
+from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
@@ -9,10 +10,16 @@ from .models import Notification
 
 @login_required
 def notification_list(request):
-    notifications = Notification.objects.filter(user=request.user)
-    paginator = Paginator(notifications, 15)
+    own_notifications = Notification.objects.filter(user=request.user)
+    stats = own_notifications.aggregate(
+        total=Count('id'),
+        unread=Count('id', filter=Q(is_read=False)),
+    )
+    paginator = Paginator(own_notifications, 15)
     page_obj = paginator.get_page(request.GET.get('page'))
-    return render(request, 'notifications/notification_list.html', {'page_obj': page_obj, 'show_sidebar': True})
+    return render(request, 'notifications/notification_list.html', {
+        'page_obj': page_obj, 'show_sidebar': True, 'stats': stats,
+    })
 
 
 @login_required

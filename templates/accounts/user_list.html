@@ -1,6 +1,14 @@
 {% extends "base.html" %}
 {% block title %}Users{% endblock %}
 {% block content %}
+{% include "dashboard/_banner.html" with title="Users" subtitle="Manage staff and customer accounts" icon="users" %}
+
+<div class="mb-6 grid grid-cols-3 gap-4">
+    {% include "dashboard/_kpi_card.html" with icon="users" icon_bg="bg-brand-blue-100 dark:bg-brand-blue-900/40" icon_color="blue" label="Total users" value=stats.total %}
+    {% include "dashboard/_kpi_card.html" with icon="check" icon_bg="bg-brand-green-100 dark:bg-brand-green-900/40" icon_color="green" label="Active" value=stats.active %}
+    {% include "dashboard/_kpi_card.html" with icon="lock" icon_bg="bg-brand-orange-100 dark:bg-brand-orange-900/40" icon_color="orange" label="Staff (owner/admin)" value=stats.staff %}
+</div>
+
 <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
     <div>
         <h1 class="text-2xl font-bold text-slate-900 dark:text-white">{% if filter_tenant %}Staff — {{ filter_tenant.business_name }}{% else %}Users{% endif %}</h1>

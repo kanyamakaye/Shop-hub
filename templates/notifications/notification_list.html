@@ -1,7 +1,12 @@
 {% extends "base.html" %}
 {% block title %}Notifications{% endblock %}
 {% block content %}
-<h1 class="mb-6 text-2xl font-bold text-slate-900 dark:text-white">Notifications</h1>
+{% include "dashboard/_banner.html" with title="Notifications" subtitle="Stay on top of your account activity" icon="bell" %}
+
+<div class="mb-6 grid grid-cols-2 gap-4">
+    {% include "dashboard/_kpi_card.html" with icon="bell" icon_bg="bg-brand-blue-100 dark:bg-brand-blue-900/40" icon_color="blue" label="Total" value=stats.total %}
+    {% include "dashboard/_kpi_card.html" with icon="check" icon_bg="bg-brand-orange-100 dark:bg-brand-orange-900/40" icon_color="orange" label="Unread" value=stats.unread %}
+</div>
 
 <div class="space-y-3">
     {% for notification in page_obj %}

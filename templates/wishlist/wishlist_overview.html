@@ -2,12 +2,14 @@
 {% load humanize %}
 {% block title %}{{ title }}{% endblock %}
 {% block content %}
-<div class="mb-6 flex flex-wrap items-center justify-between gap-3">
-    <div>
-        <h1 class="text-2xl font-bold text-slate-900 dark:text-white">{{ title }}</h1>
-        <p class="text-sm text-slate-500 dark:text-slate-400">{% if is_owner %}Every product wishlisted by a customer, across every store.{% else %}Products your customers have wishlisted.{% endif %} Read-only.</p>
-    </div>
+{% include "dashboard/_banner.html" with title=title subtitle="Read-only view of customer wishlists" icon="wishlist" %}
+
+<div class="mb-6 grid grid-cols-2 gap-4">
+    {% include "dashboard/_kpi_card.html" with icon="wishlist" icon_bg="bg-brand-blue-100 dark:bg-brand-blue-900/40" icon_color="blue" label="Customers with wishlists" value=stats.total_wishlists %}
+    {% include "dashboard/_kpi_card.html" with icon="products" icon_bg="bg-brand-green-100 dark:bg-brand-green-900/40" icon_color="green" label="Items wishlisted" value=stats.total_items %}
 </div>
+
+<p class="mb-4 text-sm text-slate-500 dark:text-slate-400">{% if is_owner %}Every product wishlisted by a customer, across every store.{% else %}Products your customers have wishlisted.{% endif %} Read-only.</p>
 
 <form method="get" class="mb-4 max-w-sm">
     <input type="text" name="q" value="{{ query }}" placeholder="Search by customer or product..." class="form-input">

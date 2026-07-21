@@ -1,7 +1,8 @@
 from django.contrib import messages
 from django.core.paginator import Paginator
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 
 from accounts.decorators import role_required
 from accounts.models import User
@@ -12,7 +13,13 @@ from .models import Coupon
 
 @role_required(User.Role.SYSTEM_ADMIN)
 def coupon_list(request):
-    coupons = Coupon.objects.filter(tenant_id=request.user.tenant_id)
+    tenant_coupons = Coupon.objects.filter(tenant_id=request.user.tenant_id)
+    stats = tenant_coupons.aggregate(
+        total=Count('id'),
+        active=Count('id', filter=Q(status=Coupon.Status.ACTIVE)),
+        expired=Count('id', filter=Q(valid_until__lt=timezone.now().date())),
+    )
+    coupons = tenant_coupons
     query = request.GET.get('q', '').strip()
     status = request.GET.get('status', '').strip()
     discount_type = request.GET.get('discount_type', '').strip()
@@ -32,7 +39,7 @@ def coupon_list(request):
     page_obj = paginator.get_page(request.GET.get('page'))
     return render(request, 'coupons/coupon_list.html', {
         'page_obj': page_obj, 'query': query, 'show_sidebar': True, 'base_query': base_query,
-        'status': status, 'discount_type': discount_type,
+        'status': status, 'discount_type': discount_type, 'stats': stats,
         'status_choices': Coupon.Status.choices, 'discount_type_choices': Coupon.DiscountType.choices,
     })
 

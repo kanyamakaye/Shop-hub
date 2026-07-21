@@ -6,7 +6,7 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
-from .models import EmailOTP, User
+from .models import EmailOTP, PlatformSettings, User
 
 
 def _extract_code(message_body):
@@ -18,6 +18,7 @@ class LoginOTPTests(TestCase):
         self.user = User.objects.create_user(
             username='alice', password='s3cret-pass', email='alice@example.com',
         )
+        PlatformSettings.objects.update_or_create(pk=1, defaults={'two_factor_enabled': True})
 
     def test_login_with_email_requires_otp_before_session_established(self):
         response = self.client.post(reverse('accounts:login'), {
@@ -96,3 +97,33 @@ class LoginOTPTests(TestCase):
         })
         self.assertRedirects(response, reverse('accounts:verify_otp'))
         self.assertFalse(response.wsgi_request.user.is_authenticated)
+
+
+class TwoFactorToggleTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username='dave', password='s3cret-pass', email='dave@example.com',
+        )
+
+    def test_two_factor_is_off_by_default(self):
+        self.assertFalse(PlatformSettings.get_solo().two_factor_enabled)
+        response = self.client.post(reverse('accounts:login'), {
+            'username': 'dave', 'password': 's3cret-pass',
+        })
+        self.assertRedirects(response, reverse('dashboard:redirect'), fetch_redirect_response=False)
+        self.assertTrue(response.wsgi_request.user.is_authenticated)
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_owner_can_enable_two_factor_from_settings(self):
+        owner = User.objects.create_user(
+            username='owner', password='s3cret-pass', role=User.Role.SYSTEM_OWNER,
+        )
+        self.client.force_login(owner)
+        response = self.client.post(reverse('accounts:platform_settings'), {'two_factor_enabled': 'on'})
+        self.assertRedirects(response, reverse('accounts:platform_settings'))
+        self.assertTrue(PlatformSettings.get_solo().two_factor_enabled)
+
+    def test_non_owner_cannot_reach_platform_settings(self):
+        self.client.force_login(self.user)
+        response = self.client.get(reverse('accounts:platform_settings'))
+        self.assertEqual(response.status_code, 403)

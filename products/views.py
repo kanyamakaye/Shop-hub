@@ -1,6 +1,6 @@
 from django.contrib import messages
 from django.core.paginator import Paginator
-from django.db.models import Avg, F, Q
+from django.db.models import Avg, Count, F, Q
 from django.shortcuts import get_object_or_404, redirect, render
 
 from accounts.decorators import role_required
@@ -97,7 +97,13 @@ def product_detail(request, pk):
 
 @role_required(User.Role.SYSTEM_ADMIN)
 def product_manage_list(request):
-    products = Product.objects.filter(tenant_id=request.user.tenant_id).select_related('category')
+    tenant_products = Product.objects.filter(tenant_id=request.user.tenant_id)
+    stats = tenant_products.aggregate(
+        total=Count('id'),
+        active=Count('id', filter=Q(status=Product.Status.ACTIVE)),
+        needs_restock=Count('id', filter=Q(stock_quantity__lte=F('low_stock_threshold'))),
+    )
+    products = tenant_products.select_related('category')
     query = request.GET.get('q', '').strip()
     category_id = request.GET.get('category', '').strip()
     status = request.GET.get('status', '').strip()
@@ -143,7 +149,7 @@ def product_manage_list(request):
         'categories': Category.objects.filter(tenant_id=request.user.tenant_id),
         'category_id': category_id, 'status': status, 'stock_level': stock_level,
         'min_price': min_price, 'max_price': max_price,
-        'status_choices': Product.Status.choices,
+        'status_choices': Product.Status.choices, 'stats': stats,
     })
 
 

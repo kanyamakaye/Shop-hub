@@ -17,6 +17,7 @@
             <a href="{% url 'accounts:user_list' %}" class="sidebar-link flex items-center gap-2">{% include "_sidebar_icon.html" with icon="users" color="green" %} All Users</a>
             <a href="{% url 'wishlist:overview' %}" class="sidebar-link flex items-center gap-2">{% include "_sidebar_icon.html" with icon="wishlist" color="blue" %} Wishlist Activity</a>
             <a href="{% url 'cart:overview' %}" class="sidebar-link flex items-center gap-2">{% include "_sidebar_icon.html" with icon="cart" color="green" %} Cart Activity</a>
+            <a href="{% url 'accounts:platform_settings' %}" class="sidebar-link flex items-center gap-2">{% include "_sidebar_icon.html" with icon="lock" color="blue" %} Platform Settings</a>
         {% elif user.role == 'System Admin' %}
             <p class="px-2 pb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">{{ user.tenant.business_name }}</p>
             <a href="{% url 'dashboard:tenant' %}" class="sidebar-link flex items-center gap-2">{% include "_sidebar_icon.html" with icon="dashboard" color="blue" %} Dashboard</a>

@@ -51,6 +51,26 @@ class User(AbstractUser):
         return self.role == self.Role.USER
 
 
+class PlatformSettings(models.Model):
+    """Single-row, platform-wide settings, editable by the System Owner."""
+    two_factor_enabled = models.BooleanField(
+        default=False,
+        help_text='Require an emailed 6-digit code after password login, for every account with an email on file.',
+    )
+
+    class Meta:
+        verbose_name = 'Platform settings'
+        verbose_name_plural = 'Platform settings'
+
+    def __str__(self):
+        return 'Platform settings'
+
+    @classmethod
+    def get_solo(cls):
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+
 class EmailOTP(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='email_otps')
     code_hash = models.CharField(max_length=128)

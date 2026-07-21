@@ -1,8 +1,15 @@
 {% extends "base.html" %}
 {% block title %}Organizations{% endblock %}
 {% block content %}
-<div class="mb-6 flex flex-wrap items-center justify-between gap-3">
-    <h1 class="text-2xl font-bold text-slate-900 dark:text-white">Organizations</h1>
+{% include "dashboard/_banner.html" with title="Organizations" subtitle="Every store on the platform" icon="org" %}
+
+<div class="mb-6 grid grid-cols-3 gap-4">
+    {% include "dashboard/_kpi_card.html" with icon="org" icon_bg="bg-brand-blue-100 dark:bg-brand-blue-900/40" icon_color="blue" label="Total organizations" value=stats.total %}
+    {% include "dashboard/_kpi_card.html" with icon="check" icon_bg="bg-brand-green-100 dark:bg-brand-green-900/40" icon_color="green" label="Active" value=stats.active %}
+    {% include "dashboard/_kpi_card.html" with icon="storefront" icon_bg="bg-brand-orange-100 dark:bg-brand-orange-900/40" icon_color="orange" label="New this month" value=stats.new_this_month %}
+</div>
+
+<div class="mb-6 flex flex-wrap items-center justify-end gap-3">
     <a href="{% url 'tenants:create' %}" class="btn-primary">+ New organization</a>
 </div>
 

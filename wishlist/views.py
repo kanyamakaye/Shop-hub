@@ -1,6 +1,6 @@
 from django.contrib import messages
 from django.core.paginator import Paginator
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
@@ -22,10 +22,16 @@ def wishlist(request):
 def wishlist_overview(request):
     """Read-only view of wishlist activity: platform-wide for the Owner, store-scoped for a System Admin."""
     is_owner = request.user.role == User.Role.SYSTEM_OWNER
-    items = Wishlist.objects.select_related('user', 'product', 'product__tenant').order_by('-added_date')
+    scoped_items = Wishlist.objects.all()
     if not is_owner:
-        items = items.filter(product__tenant_id=request.user.tenant_id)
+        scoped_items = scoped_items.filter(product__tenant_id=request.user.tenant_id)
 
+    stats = scoped_items.aggregate(
+        total_wishlists=Count('user', distinct=True),
+        total_items=Count('id'),
+    )
+
+    items = scoped_items.select_related('user', 'product', 'product__tenant').order_by('-added_date')
     query = request.GET.get('q', '').strip()
     if query:
         items = items.filter(
@@ -44,6 +50,7 @@ def wishlist_overview(request):
         'title': title,
         'is_owner': is_owner,
         'show_sidebar': True,
+        'stats': stats,
     })
 
 

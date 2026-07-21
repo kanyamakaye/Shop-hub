@@ -1,6 +1,7 @@
 from django.contrib import messages
 from django.core.paginator import Paginator
-from django.db.models import Q
+from django.db.models import Count, F, Q, Sum
+from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
@@ -29,10 +30,17 @@ def cart_list(request):
 def cart_overview(request):
     """Read-only view of active carts: platform-wide for the Owner, store-scoped for a System Admin."""
     is_owner = request.user.role == User.Role.SYSTEM_OWNER
-    items = Cart.objects.select_related('user', 'product', 'product__tenant').order_by('-added_date')
+    scoped_items = Cart.objects.all()
     if not is_owner:
-        items = items.filter(product__tenant_id=request.user.tenant_id)
+        scoped_items = scoped_items.filter(product__tenant_id=request.user.tenant_id)
 
+    stats = scoped_items.aggregate(
+        total_carts=Count('user', distinct=True),
+        total_items=Sum('quantity'),
+        estimated_value=Sum(F('quantity') * Coalesce('product__discount_price', 'product__price')),
+    )
+
+    items = scoped_items.select_related('user', 'product', 'product__tenant').order_by('-added_date')
     query = request.GET.get('q', '').strip()
     if query:
         items = items.filter(
@@ -51,6 +59,7 @@ def cart_overview(request):
         'title': title,
         'is_owner': is_owner,
         'show_sidebar': True,
+        'stats': stats,
     })
 
 

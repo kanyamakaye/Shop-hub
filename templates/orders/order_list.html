@@ -2,6 +2,16 @@
 {% load humanize %}
 {% block title %}Orders{% endblock %}
 {% block content %}
+{% if stats %}
+{% include "dashboard/_banner.html" with title="Orders" subtitle="Track and manage every order" icon="orders" %}
+
+<div class="mb-6 grid grid-cols-3 gap-4">
+    {% include "dashboard/_kpi_card.html" with icon="orders" icon_bg="bg-brand-blue-100 dark:bg-brand-blue-900/40" icon_color="blue" label="Total orders" value=stats.total %}
+    {% include "dashboard/_kpi_card.html" with icon="bell" icon_bg="bg-brand-orange-100 dark:bg-brand-orange-900/40" icon_color="orange" label="Pending" value=stats.pending %}
+    {% include "dashboard/_kpi_card.html" with icon="money" icon_bg="bg-brand-green-100 dark:bg-brand-green-900/40" icon_color="green" label="Revenue (paid)" value=stats.revenue|default:0|floatformat:0|intcomma suffix="RWF" %}
+</div>
+{% endif %}
+
 <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
     <h1 class="text-2xl font-bold text-slate-900 dark:text-white">
         {% if user.role == "User" %}My orders{% else %}Orders{% endif %}

@@ -1,8 +1,15 @@
 {% extends "base.html" %}
 {% block title %}Categories{% endblock %}
 {% block content %}
-<div class="mb-6 flex flex-wrap items-center justify-between gap-3">
-    <h1 class="text-2xl font-bold text-slate-900 dark:text-white">Categories</h1>
+{% include "dashboard/_banner.html" with title="Categories" subtitle="Organize your store's catalog" icon="categories" %}
+
+<div class="mb-6 grid grid-cols-3 gap-4">
+    {% include "dashboard/_kpi_card.html" with icon="categories" icon_bg="bg-brand-blue-100 dark:bg-brand-blue-900/40" icon_color="blue" label="Total categories" value=stats.total %}
+    {% include "dashboard/_kpi_card.html" with icon="tag" icon_bg="bg-brand-green-100 dark:bg-brand-green-900/40" icon_color="green" label="Top-level" value=stats.top_level %}
+    {% include "dashboard/_kpi_card.html" with icon="check" icon_bg="bg-brand-orange-100 dark:bg-brand-orange-900/40" icon_color="orange" label="With active products" value=stats.with_products %}
+</div>
+
+<div class="mb-6 flex flex-wrap items-center justify-end gap-3">
     <a href="{% url 'categories:create' %}" class="btn-primary">+ New category</a>
 </div>
 

@@ -2,17 +2,25 @@
 {% load humanize %}
 {% block title %}Pricing{% endblock %}
 {% block content %}
-<div class="mb-8 text-center">
-    <h1 class="text-3xl font-bold text-slate-900 dark:text-white">Subscription Plans</h1>
-    <p class="mt-2 text-slate-600 dark:text-slate-400">Pick the plan that fits your store. All prices in RWF.</p>
+{% if is_owner %}
+{% include "dashboard/_banner.html" with title="Subscription Plans" subtitle="Manage the plans stores can subscribe to" icon="plans" %}
+
+<div class="mb-6 grid grid-cols-3 gap-4">
+    {% include "dashboard/_kpi_card.html" with icon="plans" icon_bg="bg-brand-blue-100 dark:bg-brand-blue-900/40" icon_color="blue" label="Total plans" value=stats.total %}
+    {% include "dashboard/_kpi_card.html" with icon="check" icon_bg="bg-brand-green-100 dark:bg-brand-green-900/40" icon_color="green" label="Active" value=stats.active %}
+    {% include "dashboard/_kpi_card.html" with icon="org" icon_bg="bg-brand-orange-100 dark:bg-brand-orange-900/40" icon_color="orange" label="Subscribed stores" value=stats.subscribers %}
 </div>
 
-{% if is_owner %}
 <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
     <form method="get" class="max-w-sm flex-1">
         <input type="text" name="q" value="{{ query }}" placeholder="Search plans..." class="form-input">
     </form>
     <a href="{% url 'subscriptions:create' %}" class="btn-primary">+ New plan</a>
+</div>
+{% else %}
+<div class="mb-8 text-center">
+    <h1 class="text-3xl font-bold text-slate-900 dark:text-white">Subscription Plans</h1>
+    <p class="mt-2 text-slate-600 dark:text-slate-400">Pick the plan that fits your store. All prices in RWF.</p>
 </div>
 {% endif %}
 

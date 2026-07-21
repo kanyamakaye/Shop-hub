@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Platform settings{% endblock %}
+{% block content %}
+{% include "dashboard/_banner.html" with title="Platform Settings" subtitle="Platform-wide security and login options" icon="lock" %}
+
+<div class="mx-auto max-w-2xl">
+    <div class="card">
+        <form method="post" novalidate>
+            {% csrf_token %}
+            <label class="flex items-start gap-3">
+                {{ form.two_factor_enabled }}
+                <span>
+                    <span class="block font-semibold text-slate-900 dark:text-white">Email two-factor authentication</span>
+                    <span class="mt-1 block text-sm text-slate-500 dark:text-slate-400">{{ form.two_factor_enabled.help_text }}</span>
+                </span>
+            </label>
+            <button type="submit" class="btn-primary mt-6 w-full">Save settings</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

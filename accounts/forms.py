@@ -5,7 +5,7 @@ from django.contrib.auth.forms import (
 )
 
 from tenants.models import Tenant
-from .models import User
+from .models import PlatformSettings, User
 
 INPUT_CLASS = 'form-input'
 
@@ -216,3 +216,14 @@ class StyledSetPasswordForm(SetPasswordForm):
         for field in self.fields.values():
             field.widget.attrs.setdefault('class', INPUT_CLASS)
         apply_password_strength(self.fields['new_password1'])
+
+
+class PlatformSettingsForm(forms.ModelForm):
+    class Meta:
+        model = PlatformSettings
+        fields = ['two_factor_enabled']
+        widgets = {
+            'two_factor_enabled': forms.CheckboxInput(attrs={
+                'class': 'mt-1 h-5 w-5 rounded border-slate-300 text-brand-blue-600 focus:ring-brand-blue-500 dark:border-slate-600',
+            }),
+        }
