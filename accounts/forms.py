@@ -216,8 +216,6 @@ class StyledSetPasswordForm(SetPasswordForm):
         for field in self.fields.values():
             field.widget.attrs.setdefault('class', INPUT_CLASS)
         apply_password_strength(self.fields['new_password1'])
-
-
 class PlatformSettingsForm(forms.ModelForm):
     class Meta:
         model = PlatformSettings
